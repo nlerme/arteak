@@ -1,0 +1,1 @@
+/usr/bin/c++    -DGCO_ENERGYTYPE=int -DGCO_ENERGYTERMTYPE=int -g   CMakeFiles/example2.dir/example2.cpp.o  -o example2 -rdynamic libgco.a 

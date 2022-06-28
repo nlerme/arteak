@@ -1,0 +1,3 @@
+-#fragments:500 -overpicking_size_factor:1.5 -%lost_fragments:7.5
+ -%spurious:0  -probability_type:2 -minimum_diag_dimension:20 -diagonal_dimension_erosion:8 -radius_erosion:10
+ -annular_probability:0.5 -circle_radius:10 -circle_border:3
