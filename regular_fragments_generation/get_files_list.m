@@ -1,5 +1,5 @@
 % This function returns the set of filenames within given directory
-function res_fns = get_files_list( root_dir_name )
+function res_fns = get_files_list( root_dir_name, filter )
     % We get the set of maching directories and loop over them
     dir_names = get_matching_dirs(root_dir_name, '.*');
     res_fns   = {};
@@ -10,7 +10,7 @@ function res_fns = get_files_list( root_dir_name )
         dir_name  = dir_name{end};
 
         % We look for image files
-        file_names = get_matching_files(dir_names{i}, '.*\..*');
+        file_names = get_matching_files(dir_names{i}, [dir_name '.png']);
 
         % If the list is not empty, we append it to the list
         if isempty(file_names)

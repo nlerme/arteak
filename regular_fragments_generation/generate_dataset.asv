@@ -78,7 +78,7 @@ function generate_dataset()
             end
 
             fresco_size = [size(im_fresco_color,1),size(im_fresco_color,2)];
-            imwrite(im_fresco_color, [fresco_dir filesep fresco_name '.png'], 'Alpha', uint8(255*ones(fresco_size)));
+            imwrite(im_fresco_color, [fresco_dir filesep fresco_name '.png'], 'Alpha', uint8(255*ones(fresc);
 
             % We loop over degradation rates
             for j=1:numel(fresco_degradation_rates)

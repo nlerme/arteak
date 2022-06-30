@@ -1,13 +1,9 @@
 % This function saves the ideal fresco reconstructions (eventually superimposed with neighboring relationships between fragments)
-function save_reconstructed_fresco( im_rec_color, im_rec_alpha, filename, frag_neighbors, frag_translations )
+function save_reconstructed_fresco( im_rec_color, frag_neighbors, frag_translations, idx_color, neighbors_color, filename )
     if ~isempty(frag_neighbors) && ~isempty(frag_translations)
         % If neighboring relationships between fragments are available, we superimpose them onto the ideal reconstructed fresco
         h = figure('units', 'normalized', 'outerposition', [0 0 1 1], 'visible', false);
-        ih = image(im_rec_color, 'AlphaData', im_rec_alpha);
-        set(gca, 'visible', 'off');
-        set(gca, 'color', 'none');
-        set(gcf, 'color', 'none');
-        axis image;
+        imshow(im_rec_color, []);
         hold on;
 
         % Neighboring relationships
@@ -22,7 +18,7 @@ function save_reconstructed_fresco( im_rec_color, im_rec_alpha, filename, frag_n
 
                 translation2 = frag_translations(idx2);
                 translation2 = translation2{1};
-                plot([translation1(2),translation2(2)], [translation1(1),translation2(1)], 'Color', 'cyan', 'LineWidth', 4);
+                plot([translation1(2),translation2(2)], [translation1(1),translation2(1)], 'Color', neighbors_color, 'LineWidth', 4);
             end
         end
 
@@ -32,7 +28,7 @@ function save_reconstructed_fresco( im_rec_color, im_rec_alpha, filename, frag_n
             translation = translation{1};
 
             if ~isempty(translation)
-                text(translation(2)-10, translation(1), sprintf('%d', idx-1), 'Color', 'magenta', 'FontSize', 16);
+                text(translation(2)-10, translation(1), sprintf('%d', idx-1), 'Color', idx_color, 'FontSize', 16);
             end
         end
 
@@ -44,6 +40,6 @@ function save_reconstructed_fresco( im_rec_color, im_rec_alpha, filename, frag_n
         close(gcf);
     else
         % Otherwise, we just save the ideal reconstructed fresco
-        imwrite(im_rec_color, filename, 'Alpha', im_rec_alpha);
+        imwrite(im_rec_color, filename);
     end
 end

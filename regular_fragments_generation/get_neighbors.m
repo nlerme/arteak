@@ -1,4 +1,4 @@
-% This function returns neighboring relationships as a symetric matrix
+% This function returns neighboring relationships between nearby fragment images as a symetric matrix
 function neighbors = get_neighbors( frag_coords, true_idx )
     % We create an empty symmetric matrix
     neighbors = zeros(numel(frag_coords));
