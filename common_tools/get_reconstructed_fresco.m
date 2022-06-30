@@ -10,29 +10,26 @@
 %   * background_color:    background color of reconstructed fresco (in {0,...,255}^c)
 % 
 % Outputs:
-%   * im_filled_frags1:  reconstructed fresco with numbered filled fragments (uint64 image)
-%   * im_filled_frags2:  reconstructed fresco with filled fragments (binary image)
-%   * im_bnd_frags:      reconstructed fresco with boundaries of fragments (binary image)
-%   * im_rec_frags:      reconstructed fresco with colored fragments (uint8 color image without alpha channel)
-function [im_filled_frags1,im_filled_frags2,im_bnd_frags,im_rec_frags] = get_reconstructed_fresco( im_fresco, frags_infos, frags_sol, interpolation_type, background_color )
+%   * im_filled_frags:  reconstructed fresco with numbered filled fragments (uint64 image)
+%   * im_bnd_frags:     reconstructed fresco with numbered boundaries of fragments (uint64 image)
+%   * im_rec_frags:     reconstructed fresco with colored fragments (uint8 color image without alpha channel)
+function [im_filled_frags,im_bnd_frags,im_rec_frags] = get_reconstructed_fresco( im_fresco, frags_infos, frags_sol, interpolation_type, background_color )
     % We get the size of fresco and number of channels
     fresco_size = size(im_fresco);
     nb_channels = size(im_fresco,3);
 
     % We check consistency between background color and number of channels of fresco image
     if nb_channels ~= length(background_color)
-        im_filled_frags1 = [];
-        im_filled_frags2 = [];
-        im_bnd_frags     = [];
-        im_rec_frags     = [];
+        im_filled_frags = [];
+        im_bnd_frags    = [];
+        im_rec_frags    = [];
         return;
     end
 
     % We allocate memory for storing results
-    im_filled_frags1 = zeros(fresco_size(1:2), 'uint64');
-    im_filled_frags2 = zeros(fresco_size(1:2), 'logical');
-    im_bnd_frags     = zeros(fresco_size(1:2), 'logical');
-    im_rec_frags     = ones(fresco_size, 'uint8');
+    im_filled_frags = zeros(fresco_size(1:2), 'uint64');
+    im_bnd_frags    = zeros(fresco_size(1:2), 'uint64');
+    im_rec_frags    = ones(fresco_size, 'uint8');
 
     for k=1:nb_channels
         im_rec_frags(:,:,k) = im_rec_frags(:,:,k)*background_color(k);
@@ -64,11 +61,12 @@ function [im_filled_frags1,im_filled_frags2,im_bnd_frags,im_rec_frags] = get_rec
         im_frag_t_alpha(fresco_idx) = 1;
 
         % We add resulting fragment image to grayscale fresco reconstruction
-        im_filled_frags1(fresco_idx) = k;
+        im_filled_frags(fresco_idx) = k;
 
         % We add resulting fragment image to binary fresco reconstructions
-        im_filled_frags2 = im_filled_frags2 | im_frag_t_alpha;
-        im_bnd_frags     = im_bnd_frags | (im_frag_t_alpha-imerode(im_frag_t_alpha,strel('square',3)))>0;
+        im_bnd_frag               = (im_frag_t_alpha-imerode(im_frag_t_alpha,strel('square',3)))>0;
+        fresco_idx2               = find(im_bnd_frag>0);
+        im_bnd_frags(fresco_idx2) = uint64(k*im_bnd_frag(fresco_idx2));
 
         % We construct color image of registered fragment and add it to color fresco reconstruction
         for c=1:nb_channels
