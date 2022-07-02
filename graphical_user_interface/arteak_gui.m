@@ -38,7 +38,7 @@ function varargout = arteak_gui( varargin )
     g_mydata.use_recs_alpha        = true;
     g_mydata.show_frags_idx        = true;
     g_mydata.show_frags_center     = true;
-    g_mydata.show_frags_neighbors  = false;
+    g_mydata.show_frags_neighbors  = true;
     g_mydata.frags_idx_color        = g_mydata.colormap(8,:);
     g_mydata.frags_center_color    = g_mydata.colormap(8,:);
     g_mydata.frags_neighbors_color = g_mydata.colormap(8,:);
@@ -52,7 +52,7 @@ function varargout = arteak_gui( varargin )
                        'color', [1,1,1]);
     imshow(imread(g_mydata.banner_fn),[]);
     movegui(fh_banner, 'center');
-    pause(1.0);
+    pause(2.0);
     delete(fh_banner);
 
     % We create the main window
@@ -611,8 +611,8 @@ function varargout = arteak_gui( varargin )
                     idx2      = frags_sol{k}.neighbors(i);
                     j         = find(cellfun(@(x) x.idx, frags_sol)==idx2);
                     frag_size = size(g_mydata.frags_infos{idx2}.alpha);
-                    p         = apply_forward_transform(frags_sol{j}.inner_circle_center, frags_sol{j}.translation, frags_sol{j}.angle, frag_size*0.5);
-                    plot([p(2),p(2)], [p(1),p(1)], 'g-', 'LineWidth', 3, 'Color', g_mydata.frags_neighbors_color);
+                    icc2      = apply_forward_transform(frags_sol{j}.inner_circle_center, frags_sol{j}.translation, frags_sol{j}.angle, frag_size*0.5);
+                    plot([icc(2),icc2(2)], [icc(1),icc2(1)], 'g-', 'LineWidth', 3, 'Color', g_mydata.frags_neighbors_color);
                 end
             end
         end
@@ -1076,13 +1076,18 @@ function varargout = arteak_gui( varargin )
                 occ           = g_mydata.frags_infos{idx}.outer_circle_center;
                 ocr           = g_mydata.frags_infos{idx}.outer_circle_radius;
                 frag_std      = g_mydata.frags_infos{idx}.std;
+
+                if ty(i)==0 && tx(i)==0
+                    continue;
+                end
+
                 frags_sol{i}  = struct('idx', idx, 'translation', [ty(i),tx(i)], 'angle', -angles(i), 'neighbors', neighbors2(idx_n), ...
                                       'fresco_coords', [], 'frag_coords', [], 'color_idx', [], 'inner_circle_center', icc, ...
                                       'inner_circle_radius', icr, 'outer_circle_center', occ, 'outer_circle_radius', ocr, 'std', frag_std);
             end
 
             % We build the reconstructed fresco and add it to the list
-            [im_rec_gray,~,~,im_rec_color] = get_reconstructed_fresco(g_mydata.im_fresco(:,:,1:end-1), g_mydata.frags_infos, frags_sol, ...
+            [im_rec_gray,~,im_rec_color]   = get_reconstructed_fresco(g_mydata.im_fresco(:,:,1:end-1), g_mydata.frags_infos, frags_sol, ...
                                                                       g_mydata.interpolation_type, g_mydata.recs_background_color);
             im_tmp1                        = cat(3, im_rec_color, g_mydata.im_fresco(:,:,end));
             im_tmp2                        = cat(3, im_rec_gray, g_mydata.im_fresco(:,:,end));

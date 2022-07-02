@@ -44,7 +44,7 @@ function generate_dataset()
         end
 
         parfor i=1:numel(frescoes_dirs)
-        %for i=1
+        %for i=2
             % We extract name of current fresco directory
             fresco_dir = split(frescoes_dirs{i}, filesep);
             fresco_dir = fresco_dir{end};
@@ -116,8 +116,7 @@ function generate_dataset()
                     [im_frag_color,im_frag_alpha] = load_image(frags_fns{k}, false);
 
                     % We add it to the list
-                    frag_info      = struct('color', im_frag_color, 'alpha', im_frag_alpha);
-                    frags_infos{k} = frag_info;
+                    frags_infos{k} = struct('color', im_frag_color, 'alpha', im_frag_alpha);
                 end
 
                 % We load the ideal reconstructed fresco
@@ -129,12 +128,16 @@ function generate_dataset()
                 end
 
                 % We construct the structure describing a fresco to reconstruct
-                frags_sol = cell(1,numel(ids));
+                %frags_sol = cell(1,numel(ids));
+                frags_sol = {};
 
                 for k=1:numel(ids)
-                    idx          = ids(k)+1;
-                    frags_sol{k} = struct('idx', idx, 'translation', [ty(k),tx(k)], 'angle', -angles(k), 'neighbors', [], ...
-                                          'fresco_coords', [], 'frag_coords', [], 'color_idx', []);
+                    if ty(k)==0 && tx(k)==0
+                        continue;
+                    end
+                    idx       = ids(k)+1;
+                    frags_sol = {frags_sol{:},struct('idx', idx, 'translation', [ty(k),tx(k)], 'angle', -angles(k), 'neighbors', [], ...
+                                          'fresco_coords', [], 'frag_coords', [], 'color_idx', [])};
                 end
 
                 % Given fragment images and their transformation parameters, we reconstruct the fresco
