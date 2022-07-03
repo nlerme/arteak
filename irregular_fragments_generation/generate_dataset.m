@@ -56,7 +56,7 @@ function generate_dataset()
             fresco_fn = get_matching_files(frescoes_dirs{i}, [fresco_dir '.png']);
 
             if numel(fresco_fn)==0
-                warning(sprintf('Unable to find fresco image in directory %s', frescoes_dirs{i}));
+                error(sprintf('Unable to find fresco image in directory %s', frescoes_dirs{i}));
                 continue;
             end
 
