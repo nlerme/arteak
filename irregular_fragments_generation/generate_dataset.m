@@ -96,8 +96,8 @@ function generate_dataset()
                 % We set necessary filenames
                 frags_dir         = [config_dirs{j} filesep 'frag_eroded'];
                 true_frags_fn     = [config_dirs{j} filesep 'fragments.txt'];
-                constraints_fn    = [config_dirs{j} filesep 'geometric_constraints.txt'];
-                parameters_fn     = [config_dirs{j} filesep 'gen_parameters.txt'];
+                constraints_fn    = [frags_dir filesep 'geometric_constraints.txt'];
+                parameters_fn     = [frags_dir filesep 'gen_parameters.txt'];
                 neighbors_fn      = [config_dirs{j} filesep 'neighbors.txt'];
                 rebuilt_img_n_fn  = [config_dirs{j} filesep 'rebuilt_image_n.png'];
 
@@ -132,10 +132,12 @@ function generate_dataset()
                 frags_sol = {};
 
                 for k=1:numel(ids)
-                    if ty(k)==0 && tx(k)==0
+                    idx = ids(k)+1;
+
+                    if idx>numel(frags_infos)
                         continue;
                     end
-                    idx       = ids(k)+1;
+
                     frags_sol = {frags_sol{:},struct('idx', idx, 'translation', [ty(k),tx(k)], 'angle', -angles(k), 'neighbors', [], ...
                                           'fresco_coords', [], 'frag_coords', [], 'color_idx', [])};
                 end

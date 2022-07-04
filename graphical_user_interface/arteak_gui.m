@@ -8,42 +8,46 @@ function varargout = arteak_gui( varargin )
     addpath_recurse(['..' filesep 'common_tools']);
 
     % We define global variables
-    g_mydata.arteak_version        = 'v0.0.1 - 20/06/2022';
-    g_mydata.software_url          = 'https://nicolaslerme.fr/';
-    g_mydata.datasets_url          = 'https://vision.unipv.it/DAFchallenge/DAFNE_dataset/dataset_download.html';
-    %g_mydata.data_root_dir         = ['..' filesep '..' filesep 'data' filesep 'regular_db1'];
-    g_mydata.data_root_dir         = '.';
-    g_mydata.pics_dir              = ['pics'];
-    g_mydata.banner_fn             = [g_mydata.pics_dir filesep 'banner.png'];
-    g_mydata.frags_dir             = 'frag_eroded';
-    g_mydata.true_frags_fn         = 'fragments.txt';
-    g_mydata.spurious_frags_fn     = 'fragments_s.txt';
-    g_mydata.neighbors_frags_fn    = 'neighbors.txt';
-    g_mydata.colormap              = get_colormap();
-    g_mydata.fresco_dir            = [];
-    g_mydata.image_view            = [0.17 0.02 0.82 0.96];
-    g_mydata.im_current            = [];
-    g_mydata.contrast              = 1.0;
-    g_mydata.luminosity            = 0.0;
-    g_mydata.im_fresco             = [];
-    g_mydata.frags_infos           = {};
-    g_mydata.im_recs_color         = {};
-    g_mydata.im_recs_gray          = {};
-    g_mydata.frags_sols            = {};
-    g_mydata.current_frags_idx     = -1;
-    g_mydata.current_recs_idx      = -1;
-    g_mydata.current_alpha         = [];
-    g_mydata.use_fresco_alpha      = true;
-    g_mydata.use_frags_alpha       = true;
-    g_mydata.use_recs_alpha        = true;
-    g_mydata.show_frags_idx        = true;
-    g_mydata.show_frags_center     = true;
-    g_mydata.show_frags_neighbors  = true;
-    g_mydata.frags_idx_color        = g_mydata.colormap(8,:);
-    g_mydata.frags_center_color    = g_mydata.colormap(8,:);
-    g_mydata.frags_neighbors_color = g_mydata.colormap(8,:);
-    g_mydata.recs_background_color = g_mydata.colormap(2,:);
-    g_mydata.interpolation_type    = 'bilinear';
+    g_mydata.arteak_version           = 'v0.0.1 - 20/06/2022';
+    g_mydata.software_url             = 'https://nicolaslerme.fr/';
+    g_mydata.datasets_url             = 'https://vision.unipv.it/DAFchallenge/DAFNE_dataset/dataset_download.html';
+    %g_mydata.data_root_dir           = ['..' filesep '..' filesep 'data' filesep 'regular_db1'];
+    g_mydata.data_root_dir            = '.';
+    g_mydata.pics_dir                 = ['pics'];
+    g_mydata.banner_fn                = [g_mydata.pics_dir filesep 'banner.png'];
+    g_mydata.frags_dir                = 'frag_eroded';
+    g_mydata.true_frags_fn            = 'fragments.txt';
+    g_mydata.spurious_frags_fn        = 'fragments_s.txt';
+    g_mydata.neighbors_frags_fn       = 'neighbors.txt';
+    g_mydata.gen_parameters_fn        = 'gen_parameters.txt';
+    g_mydata.geometric_constraints_fn = 'geometric_constraints.txt';
+    g_mydata.colormap                 = get_colormap();
+    g_mydata.fresco_dir               = [];
+    g_mydata.image_view               = [0.17 0.02 0.82 0.96];
+    g_mydata.im_current               = [];
+    g_mydata.contrast                 = 1.0;
+    g_mydata.luminosity               = 0.0;
+    g_mydata.im_fresco                = [];
+    g_mydata.frags_infos              = {};
+    g_mydata.im_recs_color            = {};
+    g_mydata.im_recs_gray             = {};
+    g_mydata.frags_sols               = {};
+    g_mydata.gen_parameters           = [];
+    g_mydata.geometric_constraints    = [];
+    g_mydata.current_frags_idx        = -1;
+    g_mydata.current_recs_idx         = -1;
+    g_mydata.current_alpha            = [];
+    g_mydata.use_fresco_alpha         = true;
+    g_mydata.use_frags_alpha          = true;
+    g_mydata.use_recs_alpha           = true;
+    g_mydata.show_frags_idx           = true;
+    g_mydata.show_frags_center        = true;
+    g_mydata.show_frags_neighbors     = true;
+    g_mydata.frags_idx_color          = g_mydata.colormap(8,:);
+    g_mydata.frags_center_color       = g_mydata.colormap(8,:);
+    g_mydata.frags_neighbors_color    = g_mydata.colormap(8,:);
+    g_mydata.recs_background_color    = g_mydata.colormap(2,:);
+    g_mydata.interpolation_type       = 'bilinear';
 
     % We display the banner for a small fraction of time
     fh_banner = figure('menubar', 'none', ...
@@ -519,7 +523,7 @@ function varargout = arteak_gui( varargin )
     end
 
     %----------------------------------------------------------------------
-    %-------------------------------- Misc. -------------------------------
+    %---------------------------- Non-callbacks ---------------------------
     %----------------------------------------------------------------------
 
     function [im_color,im_alpha] = load_image( filename )
@@ -737,26 +741,43 @@ function varargout = arteak_gui( varargin )
             frags_dir = g_mydata.data_root_dir;
         end
 
-        [filenames,path] = uigetfile([frags_dir filesep '*.png'], 'Select one or multiple fragment images', 'Multiselect', 'on');
+        directory = uigetdir(frags_dir, 'Select the directory for fragments');
 
-        % We check if filename(s) are selected
-        if isequal(filenames, 0)
+        % We check if directory is selected
+        if isequal(directory, 0)
             return;
         end
 
         % Selected filenames are converted to cell array for convenience
-        if ~iscell(filenames)
-            filenames = {filenames};
+        if ~iscell(directory)
+            directory = {directory};
         end
 
-        % We sort filenames in lexicographical order
-        filenames = natsortfiles(filenames);
+        % We check if text files exist
+        gen_parameters_fn        = [directory filesep g_mydata.gen_parameters_fn];
+        geometric_constraints_fn = [directory filesep g_mydata.geometric_constraints_fn];
+
+        if ~exist(gen_parameters_fn, 'file')
+            uiwait(errordlg(sprintf('Text file %s not found for reconstruction %s', g_mydata.gen_parameters_fn, frags_dir), 'ARTEAK ERROR', 'modal'));
+            return;
+        end
+
+        if ~exist(geometric_constraints_fn, 'file')
+            uiwait(errordlg(sprintf('Text file %s not found', g_mydata.geometric_constraints_fn, frags_dir), 'ARTEAK ERROR', 'modal'));
+            return;
+        end
+
+        % We load parameters used for reconstruction
+        gen_parameters = load_gen_parameters(gen_parameters_fn);
+
+        % We load geometric constraints
+        geometric_constraints = load_geometric_constraints(geometric_constraints_fn);
 
         % We display a progress bar
         pbh = waitbar(0, 'Please wait while loading fragment images');
 
-        % We loop over filenames of fragment images
-        current_nb_frags = numel(g_mydata.frags_infos);
+        % We get the list of fragment image filenames
+        filenames = get_matching_files(directory, '.*\.png');
 
         for k=1:numel(filenames)
             full_filename = [path,filenames{k}];
@@ -798,7 +819,9 @@ function varargout = arteak_gui( varargin )
 
                 frag_info = struct('color', im_frag_color, 'alpha', im_frag_alpha, 'inner_circle_center', icc, 'inner_circle_radius', icr, ...
                                    'outer_circle_center', occ, 'outer_circle_radius', ocr, 'std', frag_std);
-                g_mydata.frags_infos = {g_mydata.frags_infos{:},frag_info};
+                g_mydata.frags_infos           = {g_mydata.frags_infos{:},frag_info};
+                g_mydata.gen_parameters        = gen_parameters;
+                g_mydata.geometric_constraints = geometric_constraints;
                 set(g_h_fragments_listbox, 'string', {items{:},filenames{k}});
             end
 
@@ -854,7 +877,9 @@ function varargout = arteak_gui( varargin )
         if numel(g_mydata.frags_infos)>0
             g_mydata.current_frags_idx = 1;
         else
-            g_mydata.current_frags_idx = -1;
+            g_mydata.current_frags_idx     = -1;
+            g_mydata.geometric_constraints = [];
+            g_mydata.gen_parameters        = [];
         end
         
         set(g_h_fragments_listbox, 'value', g_mydata.current_frags_idx);
@@ -873,9 +898,11 @@ function varargout = arteak_gui( varargin )
             return;
         end
 
-        g_mydata.frags_infos       = {};
-        g_mydata.im_current        = [];
-        g_mydata.current_frags_idx = -1;
+        g_mydata.frags_infos           = {};
+        g_mydata.gen_parameters        = [];
+        g_mydata.geometric_constraints = [];
+        g_mydata.im_current            = [];
+        g_mydata.current_frags_idx     = -1;
         set(g_h_fragments_listbox, 'string', {});
         delete(get(gca,'Children'));
         update_view(g_mydata.use_frags_alpha);
@@ -1015,9 +1042,6 @@ function varargout = arteak_gui( varargin )
         % We display a progress bar
         pbh = waitbar(0, 'Please wait while loading reconstructed frescoes');
 
-        % We loop over directories of reconstruction images
-        current_nb_recs = numel(g_mydata.im_recs_color);
-
         for k=1:numel(full_directories)
             % We check if the reconstruction does not belong to the list of reconstructions
             items = get(g_h_reconstructions_listbox, 'string');
@@ -1049,7 +1073,7 @@ function varargout = arteak_gui( varargin )
                 continue;
             end
 
-            % We load true fragments list
+            % We load "true" fragments list
             [ids,tx,ty,angles] = textread(true_frags_fn, '%d %f %f %f');
 
             if numel(ids)~=numel(tx) || numel(tx)~=numel(ty) || numel(ty)~=numel(angles)
@@ -1069,17 +1093,18 @@ function varargout = arteak_gui( varargin )
             frags_sol = cell(1,numel(ids));
 
             for i=1:numel(ids)
-                idx           = ids(i)+1;
+                idx = ids(i)+1;
+
+                if idx>numel(frags_infos)
+                    continue;
+                end
+
                 idx_n         = find(neighbors1==idx);
                 icc           = g_mydata.frags_infos{idx}.inner_circle_center;
                 icr           = g_mydata.frags_infos{idx}.inner_circle_radius;
                 occ           = g_mydata.frags_infos{idx}.outer_circle_center;
                 ocr           = g_mydata.frags_infos{idx}.outer_circle_radius;
                 frag_std      = g_mydata.frags_infos{idx}.std;
-
-                if ty(i)==0 && tx(i)==0
-                    continue;
-                end
 
                 frags_sol{i}  = struct('idx', idx, 'translation', [ty(i),tx(i)], 'angle', -angles(i), 'neighbors', neighbors2(idx_n), ...
                                       'fresco_coords', [], 'frag_coords', [], 'color_idx', [], 'inner_circle_center', icc, ...
@@ -1474,9 +1499,11 @@ function varargout = arteak_gui( varargin )
 
         % We unload fragments data
         if numel(g_mydata.frags_infos)>0
-            g_mydata.frags_infos       = {};
-            g_mydata.current_frags_idx = -1;
-            clear_view                 = true;
+            g_mydata.frags_infos           = {};
+            g_mydata.gen_parameters        = [];
+            g_mydata.geometric_constraints = [];
+            g_mydata.current_frags_idx     = -1;
+            clear_view                     = true;
             set(g_h_fragments_listbox, 'string', {});
         end
 

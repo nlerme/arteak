@@ -206,8 +206,8 @@ function generate_dataset()
                             frags_dir         = [config_dir filesep 'frag_eroded'];
                             true_frags_fn     = [config_dir filesep 'fragments.txt'];
                             spurious_frags_fn = [config_dir filesep 'fragments_s.txt'];
-                            constraints_fn    = [config_dir filesep 'geometric_constraints.txt'];
-                            parameters_fn     = [config_dir filesep 'gen_parameters.txt'];
+                            constraints_fn    = [frags_dir filesep 'geometric_constraints.txt'];
+                            parameters_fn     = [frags_dir filesep 'gen_parameters.txt'];
                             neighbors_fn      = [config_dir filesep 'neighbors.txt'];
                             rebuilt_img_fn    = [config_dir filesep 'rebuilt_image.png'];
                             rebuilt_img_n_fn  = [config_dir filesep 'rebuilt_image_n.png'];
