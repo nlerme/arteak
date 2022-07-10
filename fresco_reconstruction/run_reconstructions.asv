@@ -78,35 +78,6 @@ function run_reconstructions()
 %                 run_reconstruction(data_root_dir, fresco_name, config_name, results_root_dir, verbose, show_figures);
 %             end
 %         end
-
-        %---------------------- DB2 dataset ----------------------
-        %results_root_dir = ['..' filesep 'test_results'];
-        %data_root_dir    = ['..' filesep 'data' filesep 'DB2'];
-        %verbose          = 0;
-        %show_figures     = 'off';
-
-        %--------------
-
-        %fresco_name = 'Domenichino_Virgin-and-unicorn';
-        %config_name = '';
-
-        %fresco_name = 'Andrea-di-Bonaiuto';
-        %config_name = '';
-
-        %fresco_name = 'Zuccari_Cardinal-hat';
-        %config_name = '';
-
-        %run_reconstruction(data_root_dir, fresco_name, config_name, results_root_dir, verbose, show_figures);
-
-        %--------------
-
-%         dirs1 = get_matching_dirs(data_root_dir, '.*');
-%         for i=1:numel(dirs1)
-%             a = split(dirs1{i}, filesep);
-%             fresco_name = a{end};
-%             disp(sprintf('+ %s (%d/%d)', fresco_name, i, numel(dirs1)));
-%             run_reconstruction(data_root_dir, fresco_name, '', results_root_dir, verbose, show_figures);
-%         end
     end
 
     function run_reconstruction( data_root_dir, fresco_name, config_name, results_root_dir, verbose, show_figures )
@@ -125,7 +96,7 @@ function run_reconstructions()
         color_matching_nb_rectangles          = 3;          % Number of rectangles for approximating circle (>0)
         color_matching_dilation_radius        = 3;          % Dilation radius of matched regions (>=0)
         color_matching_threshold              = 0.8;        % Threshold for extracting matched regions (in [0,1])
-        mean_inter_fragments_distance         = 6;          % Mean Euclidean distance between adjacent fragments (>=0)
+        inter_fragments_distance              = 6;          % Mean Euclidean distance between adjacent fragments (>=0)
         recompute_preprocessing               = 1;          % Flag indicating if preprocessing is recomputed or loaded
         recompute_color_matching              = 1;          % Flag indicating if confidence maps are recomputed or loaded
         recompute_features_matching           = 1;          % Flag indicating if features matching is recomputed or loaded
@@ -148,18 +119,11 @@ function run_reconstructions()
             error('Unable to load fresco image. Wrong path, empty directory or unknown file format?');
         end
 
-        fresco_fn = fresco_fns{1};
-
-        if ~isempty(config_name)
-            config_dir  = [fresco_dir filesep config_name];
-            frags_dir   = [config_dir filesep 'frag_eroded'];
-            gt_fn       = [config_dir filesep 'fragments.txt'];
-            results_dir = [results_root_dir filesep fresco_name filesep config_name];
-        else
-            frags_dir   = [fresco_dir filesep 'frag_eroded'];
-            gt_fn       = [fresco_dir filesep 'fragments.txt'];
-            results_dir = [results_root_dir filesep fresco_name];
-        end
+        fresco_fn   = fresco_fns{1};
+        config_dir  = [fresco_dir filesep config_name];
+        frags_dir   = [config_dir filesep 'frag_eroded'];
+        gt_fn       = [config_dir filesep 'fragments.txt'];
+        results_dir = [results_root_dir filesep fresco_name filesep config_name];
 
         preprocessing_fn     = [results_dir filesep 'preprocessing.mat'];
         color_matching_fn    = [results_dir filesep 'color_matching.mat'];
@@ -167,7 +131,7 @@ function run_reconstructions()
         mpp_optimization_fn  = [results_dir filesep 'mpp_optimization.mat'];
 
         % We create results directories
-        if ~exist(results_dir)
+        if ~isdir(results_dir)
             mkdir(results_dir);
         end
 
@@ -192,14 +156,15 @@ function run_reconstructions()
             frags_infos        = cell(1,numel(frag_fns));
             true_frags_est_idx = [];
 
-            for k=1:numel(frag_fns)
-                frag_info      = load_fragment_image(frag_fns{k}, mean_inter_fragments_distance);
+            parfor k=1:numel(frag_fns)
+                frag_info      = load_fragment(frag_fns{k}, nb_channels, inter_fragments_distance, interpolation_type);
                 frags_infos{k} = frag_info;
                 msg(sprintf('  + fragment %d/%d | size=(%d,%d), area=%d, std=%f, inner circle=(%d,%d)|%.2f, outer circle=(%.2f,%.2f)|%.2f', ...
-                            k, numel(frag_fns), frag_size, frag_area_t, frag_std, inner_circle_center, inner_circle_radius, outer_circle_center, outer_circle_radius), verbose);
+                            k, numel(frag_fns), frag_info.frag_size, frag_info.area, frag_info.std, frag_info.inner_circle_center, frag_info.inner_circle_radius, ...
+                            frag_info.outer_circle_center, frag_info.outer_circle_radius), verbose);
 
                 % We estimate true fragments as the set of of square images
-                if size(im_frag_alpha,1)==size(im_frag_alpha,2)
+                if size(frag_info.alpha,1)==size(frag_info.alpha,2)
                     true_frags_est_idx = [true_frags_est_idx,k];
                 end
             end
@@ -219,7 +184,7 @@ function run_reconstructions()
             msg(sprintf('+ all fragments             -> cardinality=%d, cover rate=%.2f%% (w.r.t. image)', numel(all_frags_idx), all_frags_cover_rate), verbose);
 
             % We load ground truth (if available)
-            if ~exist(gt_fn)
+            if ~isfile(gt_fn)
                 frags_gt                      = {};
                 true_frags_idx                = [];
                 spurious_frags_idx            = [];
@@ -237,7 +202,7 @@ function run_reconstructions()
                 true_frags_idx = [];
 
                 parfor k=1:numel(id)
-                    angle               = -angles(k); % CAUTION: ANGLE IS NEGATIVE IN GROUND TRUTHS OF DAFNE DATASET
+                    angle               = -angles(k); % CAUTION: OPPOSITE ANGLE IS TAKEN
                     q                   = apply_forward_transform(frags_infos{id(k)+1}.offset, [0,0], angle, [0,0]);
                     translation         = [ty(k),tx(k)]-q;
                     fs                  = round(0.5*frags_infos{id(k)+1}.size);
@@ -314,7 +279,7 @@ function run_reconstructions()
                                        'preprocessing_time', 'mean_inter_fragments_distance', '-v7.3');
             end
         else
-            if ~exist(preprocessing_fn)
+            if ~isfile(preprocessing_fn)
                 error(sprintf('Unable to load ''%s''', preprocessing_fn));
             end
 
@@ -410,68 +375,68 @@ function run_reconstructions()
         %------------------------------------------------------------------
 
         %------------------------------------------------------------------
-        % CODE FOR TESTING ACCURATE IMAGE REGISTRATION
-        im_fresco_gray2 = im2double(im_fresco_gray);
-        [im_fresco_grad_x,im_fresco_grad_y] = imgradientxy(im_fresco_gray2, 'sobel');
-
-        frags_gt = frags_gt;
-        frags1 = frags_gt;
-        for k=1:length(frags1)
-            %[frags1{k}.translation,frags1{k}.angle]'
-            frags1{k}.translation = frags1{k}.translation+rand_bounds([-10,-10],[+10,+10]);
-            frags1{k}.angle       = frags1{k}.angle+rand_bounds(-10,+10);
-            %frags1{k}.translation = [frags1{k}.translation(1)-10,frags1{k}.translation(2)];
-            %frags1{k}.angle = frags1{k}.angle-10;
-            %disp('------------------------------------------');
-            %[frags1{k}.translation,frags1{k}.angle]'
-        end
-        load('my_frags.mat');
-        %save('my_frags.mat', 'frags1');
-        tic;
-        frags2 = get_registered_fragment(im_fresco_gray2, im_fresco_grad_x, im_fresco_grad_y, frags_infos, frags1, interpolation_type, ...
-                                         mean_inter_fragments_distance, max_inter_fragments_distance, alpha, eta, false);
-        toc;
-        mte1 = [];
-        mte2 = [];
-        moe  = [];
-        for k=1:length(frags2)
-            t1 = frags2{k}.translation;
-            t2 = frags_gt{k}.translation;
-            a1 = frags2{k}.angle;
-            a2 = frags_gt{k}.angle;
-            disp(sprintf('+ fragment %d | t1=(%f,%f), a1=%f | t2=(%f,%f), a2=%f | delta_t=(%f,%f), delta_angle=%f', k, t1(1), t1(2), a1, t2(1), t2(2), a2, abs(t1(1)-t2(1)), abs(t1(2)-t2(2)), get_angular_difference(a1,a2)));
-            mte1 = [mte1,abs(t1(1)-t2(1))];
-            mte2 = [mte2,abs(t1(2)-t2(2))];
-            moe  = [moe,get_angular_difference(a1,a2)];
-        end
-        mean(mte1)
-        mean(mte2)
-        mean(moe)
-        %-------------------
-        [~,~,~,im_rec_frags] = get_reconstructed_fresco(im_fresco_color, frags_infos, frags_gt, interpolation_type, background_color);
-        show_reconstructed_fresco(im_rec_frags, frags_gt, [], [], [], [], [], false, false, false, true, show_figures);
-        fn = 'verite_terrain.png';
-        saveas(gcf, fn);
-        system(sprintf('mogrify -trim %s', fn));
-        close(gcf);
-        %-------------------
-        [~,~,~,im_rec_frags] = get_reconstructed_fresco(im_fresco_color, frags_infos, frags1, interpolation_type, background_color);
-        [~,~,~,~,~,~,~,~,ina] = compare_solution_to_gt(frags1, frags_gt, length(frags1), 2.0, 2.0);
-        show_reconstructed_fresco(im_rec_frags, frags1, [], [], [], [], ina, false, false, false, true, show_figures);
-        fn = 'fresque_a_recaler.png';
-        saveas(gcf, fn);
-        system(sprintf('mogrify -trim %s', fn));
-        close(gcf);
-        %-------------------
-        [~,~,~,im_rec_frags] = get_reconstructed_fresco(im_fresco_color, frags_infos, frags2, interpolation_type, background_color);
-        [~,~,~,~,~,~,~,~,ina] = compare_solution_to_gt(frags2, frags_gt, length(frags2), 5.0, 5.0);
-        show_reconstructed_fresco(im_rec_frags, frags2, [], [], [], [], ina, false, false, false, true, show_figures);
-        length(ina)
-        fn = 'fresque_recalee.png';
-        saveas(gcf, fn);
-        system(sprintf('mogrify -trim %s', fn));
-        close(gcf);
-        return;
+%         % CODE FOR TESTING ACCURATE IMAGE REGISTRATION
+%         im_fresco_gray2 = im2double(im_fresco_gray);
+%         [im_fresco_grad_x,im_fresco_grad_y] = imgradientxy(im_fresco_gray2, 'sobel');
+% 
+%         frags_gt = frags_gt;
+%         frags1 = frags_gt;
+%         for k=1:length(frags1)
+%             %[frags1{k}.translation,frags1{k}.angle]'
+%             frags1{k}.translation = frags1{k}.translation+rand_bounds([-10,-10],[+10,+10]);
+%             frags1{k}.angle       = frags1{k}.angle+rand_bounds(-10,+10);
+%             %frags1{k}.translation = [frags1{k}.translation(1)-10,frags1{k}.translation(2)];
+%             %frags1{k}.angle = frags1{k}.angle-10;
+%             %disp('------------------------------------------');
+%             %[frags1{k}.translation,frags1{k}.angle]'
+%         end
+%         load('my_frags.mat');
+%         %save('my_frags.mat', 'frags1');
+%         tic;
+%         frags2 = get_registered_fragment(im_fresco_gray2, im_fresco_grad_x, im_fresco_grad_y, frags_infos, frags1, interpolation_type, ...
+%                                          mean_inter_fragments_distance, max_inter_fragments_distance, alpha, eta, false);
+%         toc;
+%         mte1 = [];
+%         mte2 = [];
+%         moe  = [];
+%         for k=1:length(frags2)
+%             t1 = frags2{k}.translation;
+%             t2 = frags_gt{k}.translation;
+%             a1 = frags2{k}.angle;
+%             a2 = frags_gt{k}.angle;
+%             disp(sprintf('+ fragment %d | t1=(%f,%f), a1=%f | t2=(%f,%f), a2=%f | delta_t=(%f,%f), delta_angle=%f', k, t1(1), t1(2), a1, t2(1), t2(2), a2, abs(t1(1)-t2(1)), abs(t1(2)-t2(2)), get_angular_difference(a1,a2)));
+%             mte1 = [mte1,abs(t1(1)-t2(1))];
+%             mte2 = [mte2,abs(t1(2)-t2(2))];
+%             moe  = [moe,get_angular_difference(a1,a2)];
+%         end
+%         mean(mte1)
+%         mean(mte2)
+%         mean(moe)
+%         %-------------------
+%         [~,~,~,im_rec_frags] = get_reconstructed_fresco(im_fresco_color, frags_infos, frags_gt, interpolation_type, background_color);
+%         show_reconstructed_fresco(im_rec_frags, frags_gt, [], [], [], [], [], false, false, false, true, show_figures);
+%         fn = 'verite_terrain.png';
+%         saveas(gcf, fn);
+%         system(sprintf('mogrify -trim %s', fn));
+%         close(gcf);
+%         %-------------------
+%         [~,~,~,im_rec_frags] = get_reconstructed_fresco(im_fresco_color, frags_infos, frags1, interpolation_type, background_color);
+%         [~,~,~,~,~,~,~,~,ina] = compare_solution_to_gt(frags1, frags_gt, length(frags1), 2.0, 2.0);
+%         show_reconstructed_fresco(im_rec_frags, frags1, [], [], [], [], ina, false, false, false, true, show_figures);
+%         fn = 'fresque_a_recaler.png';
+%         saveas(gcf, fn);
+%         system(sprintf('mogrify -trim %s', fn));
+%         close(gcf);
+%         %-------------------
+%         [~,~,~,im_rec_frags] = get_reconstructed_fresco(im_fresco_color, frags_infos, frags2, interpolation_type, background_color);
+%         [~,~,~,~,~,~,~,~,ina] = compare_solution_to_gt(frags2, frags_gt, length(frags2), 5.0, 5.0);
+%         show_reconstructed_fresco(im_rec_frags, frags2, [], [], [], [], ina, false, false, false, true, show_figures);
+%         length(ina)
+%         fn = 'fresque_recalee.png';
+%         saveas(gcf, fn);
+%         system(sprintf('mogrify -trim %s', fn));
+%         close(gcf);
+%         return;
         %------------------------------------------------------------------
 
         %---------------------------------------------------------------------------------------------------------------------------------------------
@@ -575,7 +540,7 @@ function run_reconstructions()
                 save(color_matching_fn, 'frags_covers_rates', 'frags_outside_idx', 'color_matching_time', '-v7.3');
             end
         else
-            if ~exist(color_matching_fn)
+            if ~isfile(color_matching_fn)
                 error(sprintf('Unable to load ''%s''', color_matching_fn));
             end
 
@@ -846,7 +811,7 @@ function run_reconstructions()
                                            'tp', 'fp', 'tn', 'fn', 'accuracy', 'f_measure', 'ina', '-v7.3');
             end
         else
-            if ~exist(features_matching_fn)
+            if ~isfile(features_matching_fn)
                 error(sprintf('Unable to load ''%s''', features_matching_fn));
             end
 
@@ -998,7 +963,7 @@ function run_reconstructions()
 %                 save(mpp_optimization_fn, 'mpp_optimization_time', 'final_frags', 'tp', 'fp', 'tn', 'fn', 'accuracy', 'f_measure', 'ina', '-v7.3');
 %             end
         else
-            if ~exist(mpp_optimization_fn)
+            if ~isfile(mpp_optimization_fn)
                 error(sprintf('Unable to load ''%s''', mpp_optimization_fn));
             end
 

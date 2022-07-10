@@ -103,12 +103,12 @@ function run_evaluations
         all_tr_errors        = [];
         all_ori_errors       = [];
 
-        if ~exist(results_root_dir)
+        if ~isdir(results_root_dir)
             disp(sprintf('error: directory %s not found', results_root_dir));
             return;
         end
 
-        if ~exist(figures_root_dir)
+        if ~isdir(figures_root_dir)
             mkdir(figures_root_dir);
         end
 
@@ -700,7 +700,7 @@ function run_evaluations
         color_matching_fn    = [results_dir filesep 'color_matching.mat'];
         features_matching_fn = [results_dir filesep 'features_matching.mat'];
 
-        if ~exist(preprocessing_fn) || ~exist(color_matching_fn) || ~exist(features_matching_fn)
+        if ~isfile(preprocessing_fn) || ~isfile(color_matching_fn) || ~isfile(features_matching_fn)
             disp(sprintf('error: unable to load intermediate files for fresco %s and config %s (*.mat)', fresco_name, config_name));
             measurements = [];
             return;

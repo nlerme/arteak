@@ -2,7 +2,9 @@
 function [im_src,im_alpha] = load_image( filename, grayscale_conversion )
     % We check if the image exists
     if ~isfile(filename)
-        error('the image %s cannot be found', filename);
+        im_src   = [];
+        im_alpha = [];
+        return;
     end
 
     % We load the image

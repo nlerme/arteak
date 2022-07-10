@@ -6,6 +6,7 @@ function varargout = arteak_gui( varargin )
 
     % We add required paths recursively
     addpath_recurse(['..' filesep 'common_tools']);
+    addpath_recurse(['..' filesep 'fresco_reconstruction']);
 
     % We define global variables
     g_mydata.arteak_version           = 'v0.0.1 - 20/06/2022';
@@ -21,9 +22,10 @@ function varargout = arteak_gui( varargin )
     g_mydata.neighbors_frags_fn       = 'neighbors.txt';
     g_mydata.gen_parameters_fn        = 'gen_parameters.txt';
     g_mydata.geometric_constraints_fn = 'geometric_constraints.txt';
+    g_mydata.output_root_dir          = ['..' filesep 'results'];
     g_mydata.colormap                 = get_colormap();
     g_mydata.fresco_dir               = [];
-    g_mydata.image_view               = [0.17 0.02 0.82 0.96];
+    g_mydata.image_view               = [0.21 0.02 0.78 0.96];
     g_mydata.im_current               = [];
     g_mydata.contrast                 = 1.0;
     g_mydata.luminosity               = 0.0;
@@ -54,7 +56,15 @@ function varargout = arteak_gui( varargin )
                        'toolbar', 'none', ...
                        'name', ['About ARTEAK - ' g_mydata.arteak_version], ...
                        'color', [1,1,1]);
-    imshow(imread(g_mydata.banner_fn),[]);
+
+    im_banner = load_image(g_mydata.banner_fn, false);
+
+    if isempty(im_banner)
+        uiwait(errordlg(sprintf('Unable to load banner image %s', g_mydata.banner_fn), 'ARTEAK ERROR', 'modal'));
+        return;
+    end
+        
+    imshow(im_banner,[]);
     movegui(fh_banner, 'center');
     pause(2.0);
     delete(fh_banner);
@@ -127,7 +137,7 @@ function varargout = arteak_gui( varargin )
                                'fontsize', 11, ...
                                'fontweight', 'bold', ...
                                'units', 'normalized', ...
-                               'position', [0.01 0.84 0.15 0.15]);
+                               'position', [0.01 0.84 0.19 0.15]);
 
     g_h_fresco_filename_label = uicontrol('parent', g_h_fresco_panel, ...
                                           'style', 'text', ...
@@ -186,11 +196,11 @@ function varargout = arteak_gui( varargin )
                                  'fontsize', 11, ...
                                  'fontweight', 'bold', ...
                                  'units', 'normalized', ...
-                                 'position', [0.01 0.63 0.15 0.2]);
+                                 'position', [0.01 0.58 0.19 0.25]);
 
     g_h_fragments_listbox = uicontrol('parent', g_h_fragments_panel, ...
                                       'units', 'normalized', ...
-                                      'position', [0.05 0.45 0.9 0.5], ...
+                                      'position', [0.05 0.57 0.9 0.4], ...
                                       'style', 'listbox', ...
                                       'fontsize', 11, ...
                                       'string', {}, ...
@@ -199,7 +209,7 @@ function varargout = arteak_gui( varargin )
 
     g_h_fragments_add_button = uicontrol('parent', g_h_fragments_panel, ...
                                          'units', 'normalized', ...
-                                         'position', [0.05 0.2 0.15 0.2], ...
+                                         'position', [0.05 0.37 0.15 0.17], ...
                                          'style', 'pushbutton', ...
                                          'fontsize', 11, ...
                                          'string', '+', ...
@@ -208,7 +218,7 @@ function varargout = arteak_gui( varargin )
 
     g_h_fragments_remove_button = uicontrol('parent', g_h_fragments_panel, ...
                                             'units', 'normalized', ...
-                                            'position', [0.24 0.2 0.15 0.2], ...
+                                            'position', [0.24 0.37 0.15 0.17], ...
                                             'style', 'pushbutton', ...
                                             'fontsize', 15, ...
                                             'string', '-', ...
@@ -217,7 +227,7 @@ function varargout = arteak_gui( varargin )
 
     g_h_fragments_clear_button = uicontrol('parent', g_h_fragments_panel, ...
                                            'units', 'normalized', ...
-                                           'position', [0.43 0.2 0.15 0.2], ...
+                                           'position', [0.43 0.37 0.15 0.17], ...
                                            'style', 'pushbutton', ...
                                            'fontsize', 11, ...
                                            'string', 'X', ...
@@ -226,7 +236,7 @@ function varargout = arteak_gui( varargin )
 
     g_h_fragments_move_up_button = uicontrol('parent', g_h_fragments_panel, ...
                                              'units', 'normalized', ...
-                                             'position', [0.62 0.2 0.15 0.2], ...
+                                             'position', [0.62 0.37 0.15 0.17], ...
                                              'style', 'pushbutton', ...
                                              'fontsize', 15, ...
                                              'string', char(8593), ...
@@ -235,7 +245,7 @@ function varargout = arteak_gui( varargin )
 
     g_h_fragments_move_down_button = uicontrol('parent', g_h_fragments_panel, ...
                                                'units', 'normalized', ...
-                                               'position', [0.8 0.2 0.15 0.2], ...
+                                               'position', [0.8 0.37 0.15 0.17], ...
                                                'style', 'pushbutton', ...
                                                'fontsize', 15, ...
                                                'string', char(8595), ...
@@ -245,18 +255,36 @@ function varargout = arteak_gui( varargin )
     g_h_fragments_alpha_channel_label = uicontrol('parent', g_h_fragments_panel, ...
                                                   'style', 'text', ...
                                                   'units', 'normalized', ...
-                                                  'position', [0.05 0.05 0.7 0.1], ...
+                                                  'position', [0.05 0.23 0.7 0.1], ...
                                                   'fontsize', 11, ...
                                                   'string', 'Alpha channel:');
 
     g_h_fragments_alpha_channel_checkbox = uicontrol('parent', g_h_fragments_panel, ...
                                                      'units', 'normalized', ...
-                                                     'position', [0.7 0.05 0.1 0.1], ...
+                                                     'position', [0.7 0.25 0.1 0.1], ...
                                                      'style', 'checkbox', ...
                                                      'fontsize', 11, ...
                                                      'handlevisibility', 'callback', ...
                                                      'value', g_mydata.use_frags_alpha, ...
                                                      'callback', @fragments_alpha_changed_callback);
+
+    g_h_gen_parameters_button = uicontrol('parent', g_h_fragments_panel, ...
+                                          'units', 'normalized', ...
+                                          'position', [0.05 0.05 0.45 0.17], ...
+                                          'style', 'pushbutton', ...
+                                          'fontsize', 11, ...
+                                          'string', 'Gen param.', ...
+                                          'handlevisibility', 'callback', ...
+                                          'callback', @gen_parameters_callback);
+
+    g_h_geometric_constraints_button = uicontrol('parent', g_h_fragments_panel, ...
+                                                 'units', 'normalized', ...
+                                                 'position', [0.5 0.05 0.45 0.17], ...
+                                                 'style', 'pushbutton', ...
+                                                 'fontsize', 11, ...
+                                                 'string', 'Geo. constraints', ...
+                                                 'handlevisibility', 'callback', ...
+                                                 'callback', @geometric_constraints_callback);
 
     %---------------------------
 
@@ -265,7 +293,7 @@ function varargout = arteak_gui( varargin )
                                         'fontsize', 11, ...
                                         'fontweight', 'bold', ...
                                         'units', 'normalized', ...
-                                        'position', [0.01 0.35 0.15 0.27]);
+                                        'position', [0.01 0.3 0.19 0.27]);
 
     g_h_reconstructions_listbox = uicontrol('parent', g_h_reconstructions_panel, ...
                                             'units', 'normalized', ...
@@ -424,7 +452,7 @@ function varargout = arteak_gui( varargin )
                                             'fontsize', 11, ...
                                             'fontweight', 'bold', ...
                                             'units', 'normalized', ...
-                                            'position', [0.01 0.26 0.15 0.08]);
+                                            'position', [0.01 0.21 0.19 0.08]);
 
     g_h_contrast_label = uicontrol('parent', g_h_appearance_settings_panel, ...
                                    'style', 'text', ...
@@ -466,7 +494,7 @@ function varargout = arteak_gui( varargin )
 
     g_h_reconstruction_button = uicontrol('parent', g_fh_main, ...
                                           'units', 'normalized', ...
-                                          'position', [0.01 0.21 0.15 0.04], ...
+                                          'position', [0.01 0.16 0.19 0.04], ...
                                           'style', 'pushbutton', ...
                                           'fontsize', 11, ...
                                           'string', 'Reconstruction...', ...
@@ -475,7 +503,7 @@ function varargout = arteak_gui( varargin )
 
     g_h_measurements_button = uicontrol('parent', g_fh_main, ...
                                         'units', 'normalized', ...
-                                        'position', [0.01 0.16 0.15 0.04], ...
+                                        'position', [0.01 0.11 0.19 0.04], ...
                                         'style', 'pushbutton', ...
                                         'fontsize', 11, ...
                                         'string', 'Measurements...', ...
@@ -484,7 +512,7 @@ function varargout = arteak_gui( varargin )
 
     g_h_comparison_button = uicontrol('parent', g_fh_main, ...
                                      'units', 'normalized', ...
-                                     'position', [0.01 0.11 0.15 0.04], ...
+                                     'position', [0.01 0.06 0.1 0.04], ...
                                      'style', 'pushbutton', ...
                                      'fontsize', 11, ...
                                      'string', 'Comparison...', ...
@@ -493,7 +521,7 @@ function varargout = arteak_gui( varargin )
 
     g_h_save_view_button = uicontrol('parent', g_fh_main, ...
                                      'units', 'normalized', ...
-                                     'position', [0.01 0.06 0.15 0.04], ...
+                                     'position', [0.11 0.06 0.09 0.04], ...
                                      'style', 'pushbutton', ...
                                      'fontsize', 11, ...
                                      'string', 'Save view', ...
@@ -502,7 +530,7 @@ function varargout = arteak_gui( varargin )
 
     g_h_quit_button = uicontrol('parent', g_fh_main, ...
                                 'units', 'normalized', ...
-                                'position', [0.01 0.01 0.15 0.04], ...
+                                'position', [0.01 0.01 0.19 0.04], ...
                                 'style', 'pushbutton', ...
                                 'fontsize', 11, ...
                                 'string', 'Quit', ...
@@ -525,16 +553,6 @@ function varargout = arteak_gui( varargin )
     %----------------------------------------------------------------------
     %---------------------------- Non-callbacks ---------------------------
     %----------------------------------------------------------------------
-
-    function [im_color,im_alpha] = load_image( filename )
-        if ~exist(filename, 'file')
-            im_color = [];
-            im_alpha = [];
-            return;
-        end
-
-        [im_color,~,im_alpha] = imread(filename);
-    end
 
     function update_view( use_alpha_channel )
         % We keep track of current alpha value
@@ -645,20 +663,20 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % We get the filename of the fresco
-        [filename,path] = uigetfile({'*.png;*.jpg;*.tif'}, 'Select one fresco image', g_mydata.data_root_dir, 'Multiselect', 'off');
+        [filename,directory] = uigetfile({'*.png;*.jpg;*.tif'}, 'Select one fresco image', g_mydata.data_root_dir, 'Multiselect', 'off');
 
         % If a file is selected, we try to load it the corresponding fresco image
         if ~isequal(filename, 0)
-            full_filename                     = [path filename];
-            [im_fresco_color,im_fresco_alpha] = load_image(full_filename);
+            full_filename                     = [directory filename];
+            [im_fresco_color,im_fresco_alpha] = load_image(full_filename, false);
 
             % We check is the fresco image has been successfully loaded
             if isempty(im_fresco_color)
                 % If not, we display an error message
-                uiwait(errordlg(sprintf('Fresco image %s cannot be loaded', full_filename), 'ARTEAK ERROR', 'modal'));
+                uiwait(errordlg(sprintf('Unable to load fresco image %s', full_filename), 'ARTEAK ERROR', 'modal'));
             else
                 % Otherwise, we add it to the GUI and update the view with it
-                [g_mydata.fresco_dir,~,~] = fileparts(path);
+                [g_mydata.fresco_dir,~,~] = fileparts(directory);
 
                 if isempty(im_fresco_alpha)
                     fs              = size(im_fresco_color);
@@ -730,11 +748,17 @@ function varargout = arteak_gui( varargin )
         % We load GUI data
         g_mydata = guidata(g_fh_main);
 
+        % We check if fresco image is available
+        if isempty(g_mydata.im_fresco)
+            uiwait(errordlg('Please load first a fresco image', 'ARTEAK ERROR', 'modal'));
+            return;
+        end
+
         % We get the filename of the fragments
         if ~isempty(g_mydata.fresco_dir)
             frags_dir = g_mydata.fresco_dir;
 
-            if exist([g_mydata.fresco_dir filesep g_mydata.frags_dir], 'dir')
+            if isdir([g_mydata.fresco_dir filesep g_mydata.frags_dir])
                 frags_dir = [g_mydata.fresco_dir filesep g_mydata.frags_dir];
             end
         else
@@ -754,16 +778,16 @@ function varargout = arteak_gui( varargin )
         end
 
         % We check if text files exist
-        gen_parameters_fn        = [directory filesep g_mydata.gen_parameters_fn];
-        geometric_constraints_fn = [directory filesep g_mydata.geometric_constraints_fn];
+        gen_parameters_fn        = [directory{1} filesep g_mydata.gen_parameters_fn];
+        geometric_constraints_fn = [directory{1} filesep g_mydata.geometric_constraints_fn];
 
-        if ~exist(gen_parameters_fn, 'file')
-            uiwait(errordlg(sprintf('Text file %s not found for reconstruction %s', g_mydata.gen_parameters_fn, frags_dir), 'ARTEAK ERROR', 'modal'));
+        if ~isfile(gen_parameters_fn)
+            uiwait(errordlg(sprintf('Text file %s not found in %s', g_mydata.gen_parameters_fn, directory{1}), 'ARTEAK ERROR', 'modal'));
             return;
         end
 
-        if ~exist(geometric_constraints_fn, 'file')
-            uiwait(errordlg(sprintf('Text file %s not found', g_mydata.geometric_constraints_fn, frags_dir), 'ARTEAK ERROR', 'modal'));
+        if ~isfile(geometric_constraints_fn)
+            uiwait(errordlg(sprintf('Text file %s not found in %s', g_mydata.geometric_constraints_fn, directory{1}), 'ARTEAK ERROR', 'modal'));
             return;
         end
 
@@ -777,17 +801,17 @@ function varargout = arteak_gui( varargin )
         pbh = waitbar(0, 'Please wait while loading fragment images');
 
         % We get the list of fragment image filenames
-        filenames = get_matching_files(directory, '.*\.png');
+        filenames = get_matching_files(directory{1}, '.*\.png');
 
         for k=1:numel(filenames)
-            full_filename = [path,filenames{k}];
+            [~,fresco_name,~] = fileparts(filenames{k});
 
             % We check if fragment does not belong to the list of fragments
             items = get(g_h_fragments_listbox, 'string');
             ok    = true;
 
             for i=1:numel(items)
-                if strcmp(items{i}, filenames{k})
+                if strcmp(items{i}, fresco_name)
                     uiwait(warndlg(sprintf('Fragment image %s cannot be added because it already belongs to the fragments list', filenames{k}), 'ARTEAK ERROR', 'modal'));
                     ok = false;
                     break;
@@ -799,11 +823,11 @@ function varargout = arteak_gui( varargin )
             end
 
             % We load fragment image
-            [im_frag_color,im_frag_alpha] = load_image(full_filename);
+            [im_frag_color,im_frag_alpha] = load_image(filenames{k}, false);
 
             if isempty(im_frag_color)
                 % If loading of fragment image fails, we display an error message
-                uiwait(errordlg(sprintf('Fragment image %s cannot be loaded', full_filename), 'ARTEAK ERROR', 'modal'));
+                uiwait(errordlg(sprintf('Fragment image %s cannot be loaded', filenames{k}), 'ARTEAK ERROR', 'modal'));
             else
                 % Otherwise, we add it to the list of fragments
                 if isempty(im_frag_alpha)
@@ -816,13 +840,13 @@ function varargout = arteak_gui( varargin )
                 [rows,cols] = find(im_frag_alpha);
                 frag_int    = get_intensities(im_frag_color, [rows,cols], g_mydata.interpolation_type);
                 frag_std    = mean(std(frag_int, 0, 1));
+                frag_info   = struct('color', im_frag_color, 'alpha', im_frag_alpha, 'inner_circle_center', icc, 'inner_circle_radius', icr, ...
+                                     'outer_circle_center', occ, 'outer_circle_radius', ocr, 'std', frag_std);
 
-                frag_info = struct('color', im_frag_color, 'alpha', im_frag_alpha, 'inner_circle_center', icc, 'inner_circle_radius', icr, ...
-                                   'outer_circle_center', occ, 'outer_circle_radius', ocr, 'std', frag_std);
                 g_mydata.frags_infos           = {g_mydata.frags_infos{:},frag_info};
                 g_mydata.gen_parameters        = gen_parameters;
                 g_mydata.geometric_constraints = geometric_constraints;
-                set(g_h_fragments_listbox, 'string', {items{:},filenames{k}});
+                set(g_h_fragments_listbox, 'string', {items{:},fresco_name});
             end
 
             % We update the progress bar
@@ -984,6 +1008,68 @@ function varargout = arteak_gui( varargin )
         guidata(g_fh_main, g_mydata);
     end
 
+    function gen_parameters_callback( h_object, event_data )
+        % We load GUI data
+        g_mydata = guidata(g_fh_main);
+
+        % We display the needed information
+        fns = fieldnames(g_mydata.gen_parameters);
+
+        if isempty(g_mydata.gen_parameters)
+            str = 'The list of gen parameters is empty.';
+        else
+            str = 'The list of gen parameters is as follows:';
+
+            for k=1:numel(fns)
+                value = getfield(g_mydata.gen_parameters, fns{k});
+
+                if isnumeric(value)
+                    str = strvcat(str,sprintf('* %s: %f', fns{k}, value));
+                elseif isstring(value)
+                    str = strvcat(str,sprintf('* %s: %s', fns{k}, value));
+                else
+                    str = strvcat(str,sprintf('* %s: ???', fns{k}, value));
+                end
+            end
+        end
+
+        helpdlg(str, 'ARTEAK INFO');
+
+        % We save GUI data
+        guidata(g_fh_main, g_mydata);
+    end
+
+    function geometric_constraints_callback( h_object, event_data )
+        % We load GUI data
+        g_mydata = guidata(g_fh_main);
+
+        % We display the needed information
+        if isempty(g_mydata.geometric_constraints.locations)
+            str = 'The list of constrained locations is empty.';
+        else
+            str = 'The list of constrained locations is as follows (in pixels):';
+
+            for k=1:size(g_mydata.geometric_constraints.locations,1)
+                str = strvcat(str, sprintf('* (%f,%f)', g_mydata.geometric_constraints.locations(k,1), g_mydata.geometric_constraints.locations(k,2)));
+            end
+        end
+
+        if isempty(g_mydata.geometric_constraints.orientations)
+            str = strvcat(str, 'The list of constrained orientations is empty.');
+        else
+            str = strvcat(str, 'The list of constrained orientations is as follows (in degrees):');
+
+            for k=1:numel(g_mydata.geometric_constraints.orientations)
+                str = strvcat(str, sprintf('* %f', g_mydata.geometric_constraints.orientations(k)));
+            end
+        end
+
+        helpdlg(str, 'ARTEAK INFO');
+
+        % We save GUI data
+        guidata(g_fh_main, g_mydata);
+    end
+
     function reconstructions_list_changed_callback( h_object, event_data )
         % We load GUI data
         g_mydata = guidata(g_fh_main);
@@ -1063,12 +1149,12 @@ function varargout = arteak_gui( varargin )
             true_frags_fn      = [full_directories{k} filesep g_mydata.true_frags_fn];
             neighbors_frags_fn = [full_directories{k} filesep g_mydata.neighbors_frags_fn];
 
-            if ~exist(true_frags_fn, 'file')
+            if ~isfile(true_frags_fn)
                 uiwait(errordlg(sprintf('Text file %s not found for reconstruction %s', g_mydata.true_frags_fn, directories{k}), 'ARTEAK ERROR', 'modal'));
                 continue;
             end
 
-            if ~exist(neighbors_frags_fn, 'file')
+            if ~isfile(neighbors_frags_fn)
                 uiwait(errordlg(sprintf('Text file %s not found for reconstruction %s', g_mydata.neighbors_frags_fn, directories{k}), 'ARTEAK ERROR', 'modal'));
                 continue;
             end
@@ -1100,13 +1186,15 @@ function varargout = arteak_gui( varargin )
                 end
 
                 idx_n         = find(neighbors1==idx);
+                angle         = -angles(i); % CAUTION: OPPOSITE ANGLE IS TAKEN
+                translation   = [ty(i),tx(i)];
                 icc           = g_mydata.frags_infos{idx}.inner_circle_center;
                 icr           = g_mydata.frags_infos{idx}.inner_circle_radius;
                 occ           = g_mydata.frags_infos{idx}.outer_circle_center;
                 ocr           = g_mydata.frags_infos{idx}.outer_circle_radius;
                 frag_std      = g_mydata.frags_infos{idx}.std;
 
-                frags_sol{i}  = struct('idx', idx, 'translation', [ty(i),tx(i)], 'angle', -angles(i), 'neighbors', neighbors2(idx_n), ...
+                frags_sol{i}  = struct('idx', idx, 'translation', translation, 'angle', angle, 'neighbors', neighbors2(idx_n), ...
                                       'fresco_coords', [], 'frag_coords', [], 'color_idx', [], 'inner_circle_center', icc, ...
                                       'inner_circle_radius', icr, 'outer_circle_center', occ, 'outer_circle_radius', ocr, 'std', frag_std);
             end
@@ -1531,11 +1619,11 @@ function varargout = arteak_gui( varargin )
             im_view = frame2im(f);
 
             % We ask for filename to save
-            [filename,path] = uiputfile({'*.png'}, 'Save view as image file', 'view.png');
+            [filename,directory] = uiputfile({'*.png'}, 'Save view as image file', 'view.png');
 
             % We save view as image file
-            if ~isequal(filename,0) && ~isequal(path,0)
-                imwrite(im_view, fullfile(path,filename));
+            if ~isequal(filename,0) && ~isequal(directory,0)
+                imwrite(im_view, fullfile(directory,filename));
             end
         end
 

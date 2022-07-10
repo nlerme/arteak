@@ -9,7 +9,15 @@ function varargout = arteak_about( fh_main )
                         'name', 'ARTEAK - About', ...
                         'units', 'normalized', ...
                         'closerequestfcn', @quit_callback);
-    imshow(imread(g_mydata.banner_fn),[]);
+
+    im_banner = load_image(g_mydata.banner_fn, false);
+
+    if isempty(im_banner)
+        uiwait(errordlg(sprintf('Unable to load banner image %s', g_mydata.banner_fn), 'ARTEAK ERROR', 'modal'));
+        return;
+    end
+    
+    imshow(im_banner,[]);
     movegui(g_fh_about, 'center');
 
     %----------------------------------------------------------------------

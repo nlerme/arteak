@@ -13,7 +13,7 @@ frags_dir    = [config_dir filesep 'frag_eroded'];
 results_dir2 = [results_dir filesep fresco_name filesep config_name];
 frag_fns     = get_matching_files(frags_dir, '.*\.png');
 
-if ~exist(results_dir2)
+if ~isdir(results_dir2)
     mkdir(results_dir2);
 end
 
