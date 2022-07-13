@@ -12,13 +12,19 @@
 %   * show_outer_circles:  show/hide outer circles (true or false)
 %   * show_coloring:       show/hide graph coloring (true or false)
 %   * show_ids:            show/hide fragments ids (true or false)
-%   * show_figs:           show/hide figure ('on' or 'off')
+%   * show_figs:           show/hide figure (true or false)
 % 
 % Outputs:
 %   None
 function show_reconstructed_fresco( im_map, frags_sol, tp, fp, tn, fn, ina, show_inner_circles, show_outer_circles, show_coloring, show_ids, show_figures )
     % We create figure and display map
-    figure('units', 'normalized', 'outerposition', [0 0 1 1], 'visible', show_figures);
+    if show_figures
+        show_figures_str = 'on';
+    else
+        show_figures_str = 'off';
+    end
+
+    figure('units', 'normalized', 'outerposition', [0 0 1 1], 'visible', show_figures_str);
     imshow(im_map,[]);
     hold on;
 

@@ -103,12 +103,12 @@ function run_evaluations
         all_tr_errors        = [];
         all_ori_errors       = [];
 
-        if ~isdir(results_root_dir)
+        if ~isfolder(results_root_dir)
             disp(sprintf('error: directory %s not found', results_root_dir));
             return;
         end
 
-        if ~isdir(figures_root_dir)
+        if ~isfolder(figures_root_dir)
             mkdir(figures_root_dir);
         end
 

@@ -22,9 +22,10 @@ function varargout = arteak_gui( varargin )
     g_mydata.neighbors_frags_fn       = 'neighbors.txt';
     g_mydata.gen_parameters_fn        = 'gen_parameters.txt';
     g_mydata.geometric_constraints_fn = 'geometric_constraints.txt';
-    g_mydata.output_root_dir          = ['..' filesep 'results'];
+    g_mydata.results_root_dir         = ['..' filesep 'results'];
     g_mydata.colormap                 = get_colormap();
-    g_mydata.fresco_dir               = [];
+    g_mydata.current_fresco_dir       = [];
+    g_mydata.current_frags_dir        = [];
     g_mydata.image_view               = [0.21 0.02 0.78 0.96];
     g_mydata.im_current               = [];
     g_mydata.contrast                 = 1.0;
@@ -676,7 +677,7 @@ function varargout = arteak_gui( varargin )
                 uiwait(errordlg(sprintf('Unable to load fresco image %s', full_filename), 'ARTEAK ERROR', 'modal'));
             else
                 % Otherwise, we add it to the GUI and update the view with it
-                [g_mydata.fresco_dir,~,~] = fileparts(directory);
+                [g_mydata.current_fresco_dir,~,~] = fileparts(directory);
 
                 if isempty(im_fresco_alpha)
                     fs              = size(im_fresco_color);
@@ -700,9 +701,9 @@ function varargout = arteak_gui( varargin )
 
         % We unload the fresco image and make image view as empty
         if ~isempty(g_mydata.im_fresco)
-            g_mydata.fresco_dir = [];
-            g_mydata.im_fresco  = [];
-            g_mydata.im_current = [];
+            g_mydata.current_fresco_dir = [];
+            g_mydata.im_fresco          = [];
+            g_mydata.im_current         = [];
             delete(get(gca,'Children'));
             set(g_h_fresco_filename_edit, 'string', '');
             update_view(g_mydata.use_fresco_alpha);
@@ -755,11 +756,11 @@ function varargout = arteak_gui( varargin )
         end
 
         % We get the filename of the fragments
-        if ~isempty(g_mydata.fresco_dir)
-            frags_dir = g_mydata.fresco_dir;
+        if ~isempty(g_mydata.current_fresco_dir)
+            frags_dir = g_mydata.current_fresco_dir;
 
-            if isdir([g_mydata.fresco_dir filesep g_mydata.frags_dir])
-                frags_dir = [g_mydata.fresco_dir filesep g_mydata.frags_dir];
+            if isfolder([g_mydata.current_fresco_dir filesep g_mydata.frags_dir])
+                frags_dir = [g_mydata.current_fresco_dir filesep g_mydata.frags_dir];
             end
         else
             frags_dir = g_mydata.data_root_dir;
@@ -847,6 +848,9 @@ function varargout = arteak_gui( varargin )
                 g_mydata.gen_parameters        = gen_parameters;
                 g_mydata.geometric_constraints = geometric_constraints;
                 set(g_h_fragments_listbox, 'string', {items{:},fresco_name});
+
+                % If at least one fragment image is loaded, we set the current frags directory
+                g_mydata.current_frags_dir = directory{1};
             end
 
             % We update the progress bar
@@ -904,6 +908,7 @@ function varargout = arteak_gui( varargin )
             g_mydata.current_frags_idx     = -1;
             g_mydata.geometric_constraints = [];
             g_mydata.gen_parameters        = [];
+            g_mydata.current_frags_dir     = [];
         end
         
         set(g_h_fragments_listbox, 'value', g_mydata.current_frags_idx);
@@ -927,6 +932,7 @@ function varargout = arteak_gui( varargin )
         g_mydata.geometric_constraints = [];
         g_mydata.im_current            = [];
         g_mydata.current_frags_idx     = -1;
+        g_mydata.current_frags_dir     = [];
         set(g_h_fragments_listbox, 'string', {});
         delete(get(gca,'Children'));
         update_view(g_mydata.use_frags_alpha);
@@ -1097,8 +1103,8 @@ function varargout = arteak_gui( varargin )
         end
 
         % We get the filename of the reconstructions
-        if ~isempty(g_mydata.fresco_dir)
-            recs_dir = g_mydata.fresco_dir;
+        if ~isempty(g_mydata.current_fresco_dir)
+            recs_dir = g_mydata.current_fresco_dir;
         else
             recs_dir = g_mydata.data_root_dir;
         end
@@ -1240,6 +1246,7 @@ function varargout = arteak_gui( varargin )
 
         current_idx       = get(g_h_reconstructions_listbox, 'value');
         current_dirs      = get(g_h_reconstructions_listbox, 'string');
+        new_frags_sols    = {};
         new_im_recs_gray  = {};
         new_im_recs_color = {};
         new_dirs          = {};
@@ -1247,6 +1254,7 @@ function varargout = arteak_gui( varargin )
 
         for k=1:numel(g_mydata.im_recs_color)
             if k~=current_idx
+                new_frags_sols{idx}    = g_mydata.frags_sols{k};
                 new_im_recs_color{idx} = g_mydata.im_recs_color{k};
                 new_im_recs_gray{idx}  = g_mydata.im_recs_gray{k};
                 new_dirs{idx}          = current_dirs{k};
@@ -1254,6 +1262,7 @@ function varargout = arteak_gui( varargin )
             end
         end
 
+        g_mydata.frags_sols    = new_frags_sols;
         g_mydata.im_recs_color = new_im_recs_color;
         g_mydata.im_recs_gray  = new_im_recs_gray;
         set(g_h_reconstructions_listbox, 'string', new_dirs);
@@ -1285,6 +1294,7 @@ function varargout = arteak_gui( varargin )
             return;
         end
 
+        g_mydata.frags_sols       = {};
         g_mydata.im_recs_color    = {};
         g_mydata.im_recs_gray     = {};
         g_mydata.im_current       = [];
@@ -1307,17 +1317,20 @@ function varargout = arteak_gui( varargin )
         end
 
         % We move up the current element
-        current_recs_color  = g_mydata.im_recs_color;
-        current_recs_gray   = g_mydata.im_recs_gray;
-        current_dirs        = get(g_h_reconstructions_listbox, 'string');
-        current_idx         = get(g_h_reconstructions_listbox, 'value');
-        new_idx             = mod(current_idx-2, numel(current_dirs))+1;
+        current_frags_sols = g_mydata.frags_sols;
+        current_recs_color = g_mydata.im_recs_color;
+        current_recs_gray  = g_mydata.im_recs_gray;
+        current_dirs       = get(g_h_reconstructions_listbox, 'string');
+        current_idx        = get(g_h_reconstructions_listbox, 'value');
+        new_idx            = mod(current_idx-2, numel(current_dirs))+1;
 
+        [current_frags_sols{new_idx},current_frags_sols{current_idx}] = swap_vars(current_frags_sols{current_idx}, current_frags_sols{new_idx});
         [current_recs_color{new_idx},current_recs_color{current_idx}] = swap_vars(current_recs_color{current_idx}, current_recs_color{new_idx});
         [current_recs_gray{new_idx},current_recs_gray{current_idx}]   = swap_vars(current_recs_gray{current_idx}, current_recs_gray{new_idx});
         [current_dirs{new_idx},current_dirs{current_idx}]             = swap_vars(current_dirs{current_idx}, current_dirs{new_idx});
 
         set(g_h_reconstructions_listbox, 'string', current_dirs);
+        g_mydata.frags_sols    = current_frags_sols;
         g_mydata.im_recs_color = current_recs_color;
         g_mydata.im_recs_gray  = current_recs_gray;
 
@@ -1338,17 +1351,20 @@ function varargout = arteak_gui( varargin )
         end
 
         % We move up the current element
+        current_frags_sols = g_mydata.frags_sols;
         current_recs_color = g_mydata.im_recs_color;
         current_recs_gray  = g_mydata.im_recs_gray;
         current_dirs       = get(g_h_reconstructions_listbox, 'string');
         current_idx        = get(g_h_reconstructions_listbox, 'value');
         new_idx            = mod(current_idx, numel(current_dirs))+1;
 
+        [current_frags_sols{new_idx},current_frags_sols{current_idx}] = swap_vars(current_frags_sols{current_idx}, current_frags_sols{new_idx});
         [current_recs_color{new_idx},current_recs_color{current_idx}] = swap_vars(current_recs_color{current_idx}, current_recs_color{new_idx});
         [current_recs_gray{new_idx},current_recs_gray{current_idx}]   = swap_vars(current_recs_gray{current_idx}, current_recs_gray{new_idx});
         [current_dirs{new_idx},current_dirs{current_idx}]             = swap_vars(current_dirs{current_idx}, current_dirs{new_idx});
 
         set(g_h_reconstructions_listbox, 'string', current_dirs);
+        g_mydata.frags_sols    = current_frags_sols;
         g_mydata.im_recs_color = current_recs_color;
         g_mydata.im_recs_gray  = current_recs_gray;
 
@@ -1570,9 +1586,9 @@ function varargout = arteak_gui( varargin )
 
         % We unload fresco data
         if ~isempty(g_mydata.im_fresco)
-            g_mydata.fresco_dir = [];
-            g_mydata.im_fresco  = [];
-            clear_view          = true;
+            g_mydata.current_fresco_dir = [];
+            g_mydata.im_fresco          = [];
+            clear_view                  = true;
             set(g_h_fresco_filename_edit, 'string', '');
         end
 
@@ -1587,6 +1603,7 @@ function varargout = arteak_gui( varargin )
 
         % We unload fragments data
         if numel(g_mydata.frags_infos)>0
+            g_mydata.current_frags_dir     = [];
             g_mydata.frags_infos           = {};
             g_mydata.gen_parameters        = [];
             g_mydata.geometric_constraints = [];

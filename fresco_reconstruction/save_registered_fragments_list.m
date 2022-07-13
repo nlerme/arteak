@@ -15,7 +15,7 @@ function decision = save_registered_fragments_list( frags_sol, frags_infos, fn )
         return;
     end
 
-    fprintf(fp, '# fragment_number tx ty theta\n');
+    %fprintf(fp, '# fragment_number tx ty theta\n');
 
     for k=1:length(frags_sol)
         idx = frags_sol{k}.idx;

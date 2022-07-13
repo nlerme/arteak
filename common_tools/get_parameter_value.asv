@@ -1,0 +1,12 @@
+% This function returns the value of a parameter in a cell array with structs
+% 
+% Inputs:
+%   * ca:    set of parameters (cell array with structs)
+%   * name:  name of the parameter (non empty string)
+function value = get_parameter_value( ca, name )
+    if isempty(ca) || isempty(name)
+        error('The set of parameters as well as the parameter name must be non empty');
+    end
+
+    idx = find(cellfun(@(x) 
+end
