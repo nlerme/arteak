@@ -1,4 +1,15 @@
-% This function saves the ideal fresco reconstructions (eventually superimposed with neighboring relationships between fragments)
+% This function saves the ideal fresco reconstructions (eventually
+% superimposed with neighboring relationships between fragments).
+% 
+% Inputs:
+%   * im_rec_color:     RGB fresco color (all formats)
+%   * frags_sol:        solution composed of fragments (cell array)
+%   * idx_color:        color used for displaying fragment numbers (RGB/string)
+%   * neighbors_color:  color used for displaying neighboring relationships between fragments (RGB/string)
+%   * filename:         name of the saved file
+% 
+% Outputs:
+%   None
 function save_reconstructed_fresco( im_rec_color, frags_sol, idx_color, neighbors_color, filename )
     if ~isempty(frags_sol)
         % If a collection of fragments is available, we show the reconstruction fresco

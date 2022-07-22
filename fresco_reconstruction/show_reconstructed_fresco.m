@@ -8,15 +8,16 @@
 %   * tn:                  true negatives indexes (can be empty)
 %   * fn:                  false negatives indexes (can be empty)
 %   * ina:                 inaccurately placed fragments (can be empty)
-%   * show_inner_circles:  show/hide inner circles (true or false)
-%   * show_outer_circles:  show/hide outer circles (true or false)
-%   * show_coloring:       show/hide graph coloring (true or false)
-%   * show_ids:            show/hide fragments ids (true or false)
-%   * show_figs:           show/hide figure (true or false)
+%   * show_inner_circles:  shows/hides inner circles (true or false)
+%   * show_outer_circles:  shows/hides outer circles (true or false)
+%   * show_coloring:       shows/hides graph coloring (true or false)
+%   * show_neighbors:      shows/hides graph coloring (true or false)
+%   * show_ids:            shows/hides fragments ids (true or false)
+%   * show_figures:        shows/hides figure (true or false)
 % 
 % Outputs:
-%   None
-function show_reconstructed_fresco( im_map, frags_sol, tp, fp, tn, fn, ina, show_inner_circles, show_outer_circles, show_coloring, show_ids, show_figures )
+%   h:  figure handler
+function fh = show_reconstructed_fresco( im_map, frags_sol, tp, fp, tn, fn, ina, show_inner_circles, show_outer_circles, show_coloring, show_neighbors, show_ids, show_figures )
     % We create figure and display map
     if show_figures
         show_figures_str = 'on';
@@ -24,7 +25,7 @@ function show_reconstructed_fresco( im_map, frags_sol, tp, fp, tn, fn, ina, show
         show_figures_str = 'off';
     end
 
-    figure('units', 'normalized', 'outerposition', [0 0 1 1], 'visible', show_figures_str);
+    fh = figure('units', 'normalized', 'outerposition', [0 0 1 1], 'visible', show_figures_str);
     imshow(im_map,[]);
     hold on;
 
@@ -41,7 +42,7 @@ function show_reconstructed_fresco( im_map, frags_sol, tp, fp, tn, fn, ina, show
             color = colormap(frags_sol{i}.color_idx,:);
         else
             if isempty(tp) && isempty(fp) && isempty(tn) && isempty(fn) && isempty(ina)
-                color = 'cyan'; % CAUTION: do not use `white' (otherwise, markers and text appear as black when using `saveas')
+                color = 'cyan'; % CAUTION: do not use `white' (markers and text will appear in black when using `saveas')
             else
                 if ~isempty(ina) && sum(ina==idx)==1
                     color = [1,0.64,0]; % orange
@@ -64,7 +65,7 @@ function show_reconstructed_fresco( im_map, frags_sol, tp, fp, tn, fn, ina, show
         if show_ids
             ic_center = frags_sol{i}.inner_circle_center;
             ic_radius = frags_sol{i}.inner_circle_radius;
-            plot(ic_center(2), ic_center(1), 'r+', 'MarkerSize', 0.5*ic_radius, 'Color', color, 'LineWidth', 4);
+            plot(ic_center(2), ic_center(1), 'ro', 'MarkerSize', 0.25*ic_radius, 'Color', color, 'LineWidth', 2);
             text(double(ic_center(2)+10), double(ic_center(1)+10), sprintf('%d', idx), 'Color', color, 'FontSize', 12);
         end
 
@@ -75,15 +76,14 @@ function show_reconstructed_fresco( im_map, frags_sol, tp, fp, tn, fn, ina, show
             viscircles(flip(oc_center), oc_radius, 'Color', color);
         end
 
-        % We plot graph coloring (optional)
-        if show_coloring
+        % We plot neighboring relationships (optional)
+        if show_neighbors
             ic_center = frags_sol{i}.inner_circle_center;
             ic_radius = frags_sol{i}.inner_circle_radius;
-            plot(ic_center(2), ic_center(1), 'r+', 'MarkerSize', 0.5*ic_radius, 'Color', color, 'LineWidth', 4);
 
             for j=frags_sol{i}.neighbors
                 ic_center2 = frags_sol{j}.inner_circle_center;
-                plot([ic_center(2),ic_center2(2)], [ic_center(1),ic_center2(1)], 'g-', 'LineWidth', 2, 'Color', 'white');
+                plot([ic_center(2),ic_center2(2)], [ic_center(1),ic_center2(1)], 'LineWidth', 2, 'Color', color);
             end
         end
     end

@@ -4,7 +4,7 @@
 %   * idx1:       pixel coordinates of first fragment (n x 2 matrix of integers [py_1,px_1;...;py_1,px_n])
 %   * c1:         outer circle coordinates of first fragment (in R^2)
 %   * r1:         outer circle radius of first fragment (in R_{>0})
-%   * idx2:       pixel coordinates of second fragment (n x 2 matrix integers [py_1,px_1;...;py_1,px_n])
+%   * idx2:       pixel coordinates of second fragment (n x 2 matrix of integers [py_1,px_1;...;py_1,px_n])
 %   * c2:         outer circle coordinates of second fragment (in R^2)
 %   * r2:         outer circle radius of second fragment (in R_{>0})
 %   * tolerance:  threshold for accepting decision (in [0,1])

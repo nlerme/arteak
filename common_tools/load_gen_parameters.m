@@ -1,7 +1,21 @@
-% This function loads parameters used for reconstruction
+% This function loads parameters used for fragmenting a fresco.
+% 
+% Inputs:
+%   * filename:  name of the file containing the parameters (string)
+% 
+% Outputs:
+%   * gen_parameters:  resulting parameters (struct)
 function gen_parameters = load_gen_parameters( filename )
+    % We make return variable as empty
+    gen_parameters = struct();
+
+    % We check if the file exists
+    if ~isfile(filename)
+        gen_parameters = [];
+        return;
+    end
+
     % We read the text file
-    gen_parameters                     = struct();
     [parameters_name,parameters_value] = textread(filename, '%s %s');
 
     % We set the corresponding field of the resulting structure

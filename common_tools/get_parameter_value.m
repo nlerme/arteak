@@ -3,6 +3,9 @@
 % Inputs:
 %   * ca:    set of parameters (cell array with structs)
 %   * name:  name of the parameter (non empty string)
+% 
+% Outputs:
+%   * value:  value of the parameter
 function value = get_parameter_value( parameters, name )
     if isempty(parameters) || isempty(name)
         value = [];

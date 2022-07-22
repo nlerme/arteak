@@ -1,8 +1,21 @@
-% This function loads geometric constraints for placing fragments
+% This function loads geometric constraints for placing fragments.
+% 
+% Inputs:
+%   * filename:  name of the file containing geometric constraints (string)
+% 
+% Outputs:
+%   * geometric_constraints:  resulting geometric constraints (struct)
 function geometric_constraints = load_geometric_constraints( filename )
-    % We open the text file
+    % We make return variable as empty
     geometric_constraints = struct('locations', [], 'orientations', []);
 
+    % We check if the file exists
+    if ~isfile(filename)
+        geometric_constraints = [];
+        return;
+    end
+
+    % We open the text file
     fp = fopen(filename, 'r');
 
     if fp<0

@@ -1,5 +1,11 @@
-% This function returns the set of filenames within given directory
-function res_fns = get_files_list( root_dir_name, filter )
+% This function returns the set of filenames within given directory.
+% 
+% Inputs:
+%   * root_dir_name:  name of directory where image files are searched
+% 
+% Outputs:
+%   * res_fns:  resulting list of found image filenames
+function res_fns = get_files_list( root_dir_name )
     % We get the set of maching directories and loop over them
     dir_names = get_matching_dirs(root_dir_name, '.*');
     res_fns   = {};

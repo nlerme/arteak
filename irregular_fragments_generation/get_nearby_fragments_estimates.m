@@ -2,17 +2,14 @@
 % 
 % Inputs:
 %   * im_rec:        reconstructed fresco with filled numbered fragments (uint64 image).
-%   * frags_infos:   collection of fragment images
 %   * frags_sol_in:  input collection of fragments
 % 
 % Outputs:
 %   * ifd:            distance estimate between nearby fragments
-%   * neighbors:      estimate of neighboring relationships between nearby fragments
 %   * out_frags_sol:  output collection of fragments
-function [ifd2,neighbors,frags_sol_out] = get_nearby_fragments_estimates( im_rec, frags_infos, frags_sol_in )
+function [ifd2,frags_sol_out] = get_nearby_fragments_estimates( im_rec, frags_sol_in )
     % We get the number of fragments and allocate memory for storing neighboring relationships
-    nb_frags      = max(im_rec(:));
-    neighbors     = zeros(numel(frags_infos), 'logical');
+    nb_frags      = numel(frags_sol_in);
     frags_sol_out = frags_sol_in;
 
     % We loop over fragments
@@ -56,11 +53,6 @@ function [ifd2,neighbors,frags_sol_out] = get_nearby_fragments_estimates( im_rec
         % Refinement of inter fragments distance
         for j=neighbors_idx
             frags_sol_out{i}.neighbors = [frags_sol_out{i}.neighbors,j];
-            frags_sol_out{j}.neighbors = [frags_sol_out{j}.neighbors,i];
-            idx1                       = frags_sol_out{i}.idx;
-            idx2                       = frags_sol_out{j}.idx;
-            neighbors(idx1,idx2)       = 1;
-            neighbors(idx2,idx1)       = 1;
             im_tmp4                    = (im_rec==j);
             idx                        = find(im_tmp4>0);
             dists                      = im_d(idx);

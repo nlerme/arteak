@@ -1,25 +1,18 @@
-% This function returns a first guess for non blind fresco reconstruction, 
-% whatever the shape of fragments.
+% This function returns a first guess of fresco reconstruction, when 
+% the fresco image is at least partially available.
 % 
 % Inputs:
-%   * im_fresco:              RGBA fresco image
-%   * frags_infos:            collection of RGBA fragments
-%   * general_parameters:     value of general parameters
-%   * init_parameters:        value of init parameters
-%   * gen_parameters:         value of parameters used for generating the fragmented fresco
-%   * geometric_constraints:  geometric constraints
-%   * results_dir:            directory where results are stored
-function frags_sol = init_non_blind_reconstruction( im_fresco, frags_infos, parameters, gen_parameters, geometric_constraints, results_dir )
-        % We create results directories
-        if ~isfolder(results_dir)
-            mkdir(results_dir);
-        end
-
-                msg(sprintf('  + fragment %d/%d | size=(%d,%d), area=%d, std=%f, inner circle=(%d,%d)|%.2f, outer circle=(%.2f,%.2f)|%.2f', ...
-                            k, numel(frag_fns), frag_info.frag_size, frag_info.area, frag_info.std, frag_info.inner_circle_center, frag_info.inner_circle_radius, ...
-                            frag_info.outer_circle_center, frag_info.outer_circle_radius), verbose);
-
-
+%   * im_fresco:              fresco image (RGBA image)
+%   * frags_infos:            collection of fragments (cell array with RGBA images)
+%   * general_parameters:     value of general parameters (non empty cell array)
+%   * init_parameters:        value of init parameters (non empty cell array)
+%   * gen_parameters:         value of parameters used for generating the fragmented fresco (non empty struct)
+%   * geometric_constraints:  geometric constraints (non empty struct)
+%   * frags_gt:               ground truth ([non empty] cell array)
+% 
+% Outputs:
+%   * frags_sol:  solution composed of fragments ([non empty] cell array)
+function frags_sol = run_init_non_blind_reconstruction( im_fresco, frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt )
             % We load ground truth (if available)
             if ~isfile(gt_fn)
                 frags_gt                      = {};

@@ -4,12 +4,7 @@
 %   * im_frags3:               collection of fragment images (cell array)
 %   * erosion_radius:          radius for eroding all extracted fragment images (integer, >=0)
 %   * used_rotated_fragments:  flag indicating if fragments are rotated or not (boolean)
-%   * angles_list:             list of possible angles of rotation (array)
-%   * fragment_size:           size of fragments (2D vector of integers)
-%   * frags_dir:               directory name where fragment images are saved
-% 
-% Outputs:
-%   None
+%   * angles_list:             list of possibl
 function [im_frags4,frag_angles] = save_fragments_images( im_frags3, erosion_radius, use_rotated_fragments, angles_list, fragment_size, frags_dir )
     % We check if input arguments are valid
     if numel(im_frags3)==0

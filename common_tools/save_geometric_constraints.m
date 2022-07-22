@@ -1,31 +1,33 @@
-% This function saves the available translations and angles constraining the placement of fragments
-function save_geometric_constraints( frag_translations, frag_angles, filename )
+% This function saves the available translations and angles constraining the placement of fragments.
+% 
+% Inputs:
+%   * geometric_constraints:  geometric constraints (struct)
+%   * filename:               name of the saved file (string)
+% Outputs:
+%   None
+function save_geometric_constraints( geometric_constraints, filename )
     % We open the file in writing mode
     fp = fopen(filename, 'w');
 
     if fp<0
-        error('unable to write the text file %s', filename);
+        error('Unable to write the text file %s', filename);
     end
 
     % We write values into the text file
-    fprintf(fp, '%d\n', numel(frag_translations));
+    locations    = geometric_constraints.locations;
+    orientations = geometric_constraints.orientations;
 
-    if numel(frag_translations)>0
-        for i=1:numel(frag_translations)
-            translation = frag_translations(i);
-            translation = translation{1};
-            fprintf(fp, '%f %f\n', translation(2), translation(1));
-        end
+    fprintf(fp, '%d\n', size(locations,1));
+
+    for i=1:size(locations,1)
+        fprintf(fp, '%f %f\n', locations(i,2), locations(i,1));
     end
 
-    frag_angles = frag_angles{1};
-    fprintf(fp, '%d\n', numel(frag_angles));
+    fprintf(fp, '%d\n', numel(orientations));
 
-    if numel(frag_angles)>0
-        for i=1:numel(frag_angles)
-            angle = -frag_angles(i); % CAUTION: opposite angle is taken
-            fprintf(fp, sprintf('%f\n', angle));
-        end
+    for i=1:numel(orientations)
+        angle = -orientations(i); % CAUTION: opposite angle is taken
+        fprintf(fp, sprintf('%f\n', angle));
     end
 
     % We close the file handler

@@ -128,7 +128,6 @@ function generate_dataset()
                 end
 
                 % We construct the structure describing a fresco to reconstruct
-                %frags_sol = cell(1,numel(ids));
                 frags_sol = {};
 
                 for k=1:numel(ids)
@@ -139,23 +138,23 @@ function generate_dataset()
                     end
 
                     frags_sol = {frags_sol{:},struct('idx', idx, 'translation', [ty(k),tx(k)], 'angle', -angles(k), 'neighbors', [], ...
-                                          'fresco_coords', [], 'frag_coords', [], 'color_idx', [])};
+                                                     'fresco_coords', [], 'frag_coords', [], 'color_idx', [])};
                 end
 
                 % Given fragment images and their transformation parameters, we reconstruct the fresco
                 [im_rec_gray,~,im_rec_color] = get_reconstructed_fresco(im_fresco_color, frags_infos, frags_sol, interpolation_type, background_color);
 
                 % Given reconstructed fresco, we both estimate neighboring relationships between nearby fragments as well as their distance
-                [ifd,neighbors,frags_sol] = get_nearby_fragments_estimates(im_rec_gray, frags_infos, frags_sol);
+                [ifd,frags_sol] = get_nearby_fragments_estimates(im_rec_gray, frags_sol);
 
                 % We save the parameters used for generating fragment images
                 save_fragments_generation_parameters({'nearby_frags_gap'}, {double(ifd)}, parameters_fn);
 
                 % We save the file constraining the placement of fragment images
-                save_geometric_constraints([], {[]}, constraints_fn);
+                save_geometric_constraints(struct('locations', [], 'orientations', []), constraints_fn);
 
                 % We save the neighboring relationships between fragments
-                save_fragment_neighbors(neighbors, neighbors_fn);
+                save_fragment_neighbors(frags_sol, neighbors_fn);
 
                 % We save the ideal fresco reconstructions
                 save_reconstructed_fresco(im_rec_color, frags_sol, idx_color, neighbors_color, rebuilt_img_n_fn); % reconstructed fresco with neighboring relationships

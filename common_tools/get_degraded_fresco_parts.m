@@ -1,8 +1,18 @@
-% This function generates a binary image indicating degraded areas
+% This function generates a binary image indicating degraded areas.
+% Currently, the function does not realy on the image content. This task is
+% left for future work.
+% 
+% Inputs:
+%   * im_src:            RGB fresco image (uint8)
+%   * degradation_rate:  number indicating the amount of degradation of the fresco (in [0,1])
+% 
+% Outputs:
+%   * im_alpha:  degradation map taking for instance 255 when
+%                degradation_rate is 0 and 0 when degradation_rate is 1
 function im_alpha = get_degraded_fresco_parts( im_src, degradation_rate )
-    % We check if inputs are valid
+    % We check if input arguments are valid
     if degradation_rate<0.0 || degradation_rate>1.0
-        error('the degradation rate must be in [0,1]');
+        error('The degradation rate must be in [0,1]');
     end
 
     fresco_size = [size(im_src,1), size(im_src,2)];

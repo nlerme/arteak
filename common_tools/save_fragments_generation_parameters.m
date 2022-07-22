@@ -1,4 +1,12 @@
-% This function saves parameters used for generating fragment images
+% This function saves parameters used for generating fragment images.
+% 
+% Inputs:
+%   * parameters_names:   name of parameters (cell array)
+%   * parameters_values:  value of parameters (cell array)
+%   * filename:           name of saved file (string)
+% 
+% Outputs:
+%   None
 function save_fragments_generation_parameters( parameters_names, parameters_values, filename )
     % We check if input arguments are valid
     if numel(parameters_names)~=numel(parameters_values)

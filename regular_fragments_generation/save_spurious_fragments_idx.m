@@ -1,4 +1,11 @@
-% This function saves the indexes of spurious fragments
+% This function saves the indexes of spurious fragments.
+% 
+% Inputs:
+%   * spurious_idx:  indexes of spurious fragments (array)
+%   * filename:      name of save file (string)
+% 
+% Outputs:
+%   None
 function save_spurious_fragments_idx( spurious_idx, filename )
     % We open the file in writing mode
     fp = fopen(filename, 'w');
