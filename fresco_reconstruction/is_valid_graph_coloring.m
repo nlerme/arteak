@@ -1,7 +1,7 @@
 % Function checking the validity of a graph coloring of fragments.
 % 
 % Inputs:
-%   * frags:  collection of fragments
+%   * frags:  collection of fragments (cell array)
 % 
 % Outputs:
 %   * decision:  true if the graph coloring is valid, false otherwise

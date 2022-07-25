@@ -148,7 +148,7 @@ function generate_dataset()
                 [ifd,frags_sol] = get_nearby_fragments_estimates(im_rec_gray, frags_sol);
 
                 % We save the parameters used for generating fragment images
-                save_fragments_generation_parameters({'nearby_frags_gap'}, {double(ifd)}, parameters_fn);
+                save_gen_parameters({'nearby_frags_gap'}, {double(ifd)}, parameters_fn);
 
                 % We save the file constraining the placement of fragment images
                 save_geometric_constraints(struct('locations', [], 'orientations', []), constraints_fn);

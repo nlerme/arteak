@@ -4,11 +4,11 @@
 %   * im_frag:      binary fragment image
 %   * translation:  displacement of fragment (column vector [ty,tx] in R^2)
 %   * angle:        angle of rotation of fragment (in degrees)
-%   * fresco_size:  2D size of the fresco image
+%   * fresco_size:  size of the fresco image (2D vector of integers)
 % 
 % Outputs:
-%   * fresco_coords:  pixel coordinates in fresco domain (real numbers)
-%   * frag_coords:    pixel coordinates in fragment domain (real numbers)
+%   * fresco_coords:  pixel coordinates in fresco domain (n x 2 matrix of real numbers [py_1,px_1;...;py_1,px_n])
+%   * frag_coords:    pixel coordinates in fragment domain (n x 2 matrix of real numbers [py_1,px_1;...;py_1,px_n])
 function [fresco_coords,frag_coords] = get_transformed_fragment( im_frag, translation, angle, fresco_size )
     % We get size and center of square fragment image
     fs      = size(im_frag);

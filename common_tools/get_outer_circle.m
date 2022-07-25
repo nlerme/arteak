@@ -2,14 +2,14 @@
 % algorithm (because of the non differentiability of the involved functional).
 % 
 % Inputs:
-%   * im_src       : binary image
-%   * nb_iterations: number of iterations (in N_{>0})
-%   * verbose      : enables/disables display of debugging messages (true or false)
+%   * im_src:         binary image
+%   * nb_iterations:  number of iterations (in N_{>0})
+%   * verbose:        enables/disables display of debugging messages (true or false)
 % 
 % Outputs:
-%   * x_final   : center of the resulting circle (in R^2)
-%   * r_final   : radius of the resulting circle (in R_{>0})
-%   * iterations: array containing iterations of size Nx3 (a row corresponds to [xk,f(x_k)])
+%   * x_final:     center of the resulting circle (in R^2)
+%   * r_final:     radius of the resulting circle (in R_{>0})
+%   * iterations:  array containing iterations of size Nx3 (a row corresponds to [xk,f(x_k)])
 function [x_final,r_final,iterations] = get_outer_circle( im_src, nb_iterations, verbose )
     % We only take into account pixels lying at the boundary of the fragment
     im_src_d      = imdilate(im_src, strel('square',3))-im_src;

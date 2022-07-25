@@ -6,7 +6,7 @@
 %   * used_rotated_fragments:  flag indicating if fragments are rotated or not (boolean)
 %   * angles_list:             list of possible angles of rotation (array)
 %   * fragment_size:           size of fragments (2D vector of integers)
-%   * frags_dir:               directory name where fragment images are saved
+%   * frags_dir:               directory name where fragment images are saved (string)
 % 
 % Outputs:
 %   None

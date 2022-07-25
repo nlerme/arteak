@@ -271,14 +271,8 @@ function run_reconstructions()
         % We save the reconstructed fresco image and fragments
         %save_registered_fragments_list(final_frags_sol, frags_infos, [results_dir filesep 'fragments.txt']);
 
-        % We save the neighboring relationships
-        %neighbors = zeros(numel(final_frags_sol));
-        %for i=1:numel(final_frags_sol)
-        %    for j=final_frags_sol{i}.neighbors
-        %        neighbors(i,j) = 1;
-        %    end
-        %end
-        %save_fragment_neighbors(neighbors, [results_dir filesep 'neighbors.txt']);
+        % We save the neighboring relationships between fragments
+        %save_fragment_neighbors(final_frags_sol, [results_dir filesep 'neighbors.txt']);
 
         return;
 

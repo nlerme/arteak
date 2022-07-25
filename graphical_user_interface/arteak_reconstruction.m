@@ -16,11 +16,11 @@ function [g_new_frags_sol,g_new_im_rec_color,g_new_im_rec_gray,g_rec_name] = art
     g_rec_name         = '';
 
     % Global variables
-    g_results_dir = ['blabla'];
-    g_gt_dir      = ['blibli'];
-    %[~,fresco_name,~] = fileparts(g_mydata.current_fresco_dir);
-    %g_results_dir     = [g_mydata.results_root_dir filesep fresco_name];
-    %g_gt_dir          = g_mydata.current_fresco_dir;
+    %g_results_dir = ['blabla'];
+    %g_gt_dir      = ['blibli'];
+    [~,fresco_name,~] = fileparts(g_mydata.current_fresco_dir);
+    g_results_dir     = [g_mydata.results_root_dir filesep fresco_name];
+    g_gt_dir          = g_mydata.current_fresco_dir;
 
     g_general_parameters = {struct('name', 'verbose', 'label', 'Verbose mode', 'value', false), ...
                             struct('name', 'show_figures', 'label', 'Show figures', 'value', false), ...
@@ -266,17 +266,20 @@ function [g_new_frags_sol,g_new_im_rec_color,g_new_im_rec_gray,g_rec_name] = art
         end
 
         % We run the reconstruction algorithm to recover a collection of fragments
-        g_new_frags_sol = run_reconstruction_from_loaded_data(g_mydata.im_fresco(:,:,1:3), g_mydata.frags_infos, g_general_parameters, g_init_parameters, ...
-                                                              g_mpp_parameters, g_mydata.gen_parameters, g_mydata.geometric_constraints);
+        [g_new_frags_sol,~] = run_reconstruction_from_loaded_data(g_mydata.im_fresco(:,:,1:3), g_mydata.frags_infos, g_general_parameters, g_init_parameters, ...
+                                                                  g_mpp_parameters, g_mydata.gen_parameters, g_mydata.geometric_constraints);
 
-        % We build reconstructed frescoes
-        interpolation_type = get_parameter_value(general_parameters, 'interpolation_type');
-        background_color   = get_parameter_value(general_parameters, 'background_color');
+        % We get the reconstructed frescoes
+        interpolation_type                       = get_parameter_value(g_general_parameters, 'interpolation_type');
+        background_color                         = get_parameter_value(g_general_parameters, 'background_color');
         [g_new_im_rec_gray,~,g_new_im_rec_color] = get_reconstructed_fresco(g_mydata.im_fresco, g_mydata.frags_infos, g_new_frags_sol, interpolation_type, background_color);
-        g_new_im_rec_color = cat(3, g_new_im_rec_color, g_mydata.im_fresco(:,:,4));
+        g_new_im_rec_color                       = cat(3, g_new_im_rec_color, g_mydata.im_fresco(:,:,4));
 
-        % We add result to the list in the main window
+        % We get the reconstructed fresco name
+        results_dir      = get_parameter_value(g_general_parameters, 'results_dir');
         [~,g_rec_name,~] = fileparts(results_dir);
+
+        % We close the window
         close(g_fh_rec);
     end
 

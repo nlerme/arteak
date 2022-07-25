@@ -1,12 +1,12 @@
 % Function returning the directories matching a given pattern.
 % 
 % Inputs:
-%   * directory:  directory where the search is performed
-%   * pattern:    regular expression for matching the desired directories
+%   * directory:  directory where the search is performed (string)
+%   * pattern:    regular expression for matching the desired directories (string)
 % 
 % Outputs:
-%   * dirs_list:  list of matched directories
-function dirs_list = get_matching_dirs(path, pattern)
+%   * dirs_list:  list of matched directories (cell array)
+function dirs_list = get_matching_dirs( path, pattern )
     tmp = dir(path);
     dirs_list = {};
 

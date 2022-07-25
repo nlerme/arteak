@@ -7,7 +7,7 @@
 % 
 % Outputs:
 %   None
-function save_fragments_generation_parameters( parameters_names, parameters_values, filename )
+function save_gen_parameters( parameters_names, parameters_values, filename )
     % We check if input arguments are valid
     if numel(parameters_names)~=numel(parameters_values)
         error('parameters_names and parameters_values arrays must be of the same size');

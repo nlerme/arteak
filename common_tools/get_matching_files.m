@@ -1,12 +1,12 @@
 % Function returning the files matching a given pattern.
 %
 % Inputs:
-%   * path:    location where the search is performed
-%   * pattern: regular expression for matching the desired files
+%   * path:    location where the search is performed (string)
+%   * pattern: regular expression for matching the desired files (string)
 % 
 % Outputs:
-%   * files_list:  list of mtched files
-function files_list = get_matching_files(path, pattern)
+%   * files_list:  list of mtched files (cell array)
+function files_list = get_matching_files( path, pattern )
     tmp = dir(path);
     files_list = {};
 

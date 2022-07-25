@@ -1,9 +1,9 @@
 % Function comparing a solution w.r.t. ground truth and returning some statistics.
 % 
 % Inputs:
-%   * frags:     resulting fragments list
-%   * gt:        fragments from ground truth
-%   * nb_frags:  total number of fragments
+%   * frags:     resulting fragments list (cell array)
+%   * gt:        fragments from ground truth (cell array)
+%   * nb_frags:  total number of fragments (integer, >=0)
 %   * tt:        tolerance in translation in pixels (>=0)
 %   * at:        tolerance in angle in degrees (in [0,360])
 % 
@@ -46,7 +46,6 @@ function [tp,fp,tn,fn,acc,fm,tr_err,rot_err,ina] = compare_solution_to_gt( frags
                     ina = [ina,k];
                 end
                 tr_err  = [tr_err,[k;norm(frags2{k}.translation-gt2{k}.translation)]];
-                %ori_err = [ori_err,[k;min(abs(frags2{k}.angle-gt2{k}.angle),360.0-abs(frags2{k}.angle-gt2{k}.angle))]];
                 rot_err = [rot_err,[k;get_angular_difference(frags2{k}.angle,gt2{k}.angle)]];
             else
                 fp = [fp,k];

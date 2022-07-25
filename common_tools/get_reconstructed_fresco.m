@@ -4,9 +4,9 @@
 % 
 % Inputs:
 %   * im_fresco:           multi-channels fresco image (uint8)
-%   * frags_infos:         infos about fragments
-%   * frags_sol:           solution composed of fragments
-%   * interpolation_type:  interpolation type (e.g. nearest, bilinear, bicubic, etc.)
+%   * frags_infos:         infos about fragments (cell array)
+%   * frags_sol:           solution composed of fragments (cell array)
+%   * interpolation_type:  interpolation type (string; e.g. nearest, bilinear, bicubic, etc.)
 %   * background_color:    background color of reconstructed fresco (in {0,...,255}^c)
 % 
 % Outputs:
