@@ -10,10 +10,9 @@
 %   * geometric_constraints:  constraints used for the placement of fragments (struct)
 % 
 % Outputs:
-%   * final_frags_sol:    final fragments of the reconstructed fresco
-%   * final_frags_infos:  final fragments used for reconstructing the fresco
-function [final_frags_sol,final_frags_infos] = run_reconstruction_from_loaded_data( im_fresco, frags_infos, general_parameters, init_parameters, ...
-                                                                                    mpp_parameters, gen_parameters, geometric_constraints )
+%   * final_frags_sol:  resulting fragments of the reconstructed fresco (cell array)
+function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco, frags_infos, general_parameters, init_parameters, ...
+                                                                mpp_parameters, gen_parameters, geometric_constraints )
     % We set some useful variables
     show_figures              = get_parameter_value(general_parameters, 'show_figures');
     background_color          = get_parameter_value(general_parameters, 'background_color');
@@ -24,14 +23,21 @@ function [final_frags_sol,final_frags_infos] = run_reconstruction_from_loaded_da
     save_intermediate_results = get_parameter_value(general_parameters, 'save_intermediate_results');
     interpolation_type        = get_parameter_value(general_parameters, 'interpolation_type');
     recompute_preprocessing   = get_parameter_value(general_parameters, 'recompute_preprocessing');
+    recompute_init            = get_parameter_value(general_parameters, 'recompute_init');
+    recompute_mpp             = get_parameter_value(general_parameters, 'recompute_mpp');
     true_frags_fn             = [gt_dir filesep 'fragments.txt'];
     neighbors_fn              = [gt_dir filesep 'neighbors.txt'];
-    preprocessing_data_fn     = [results_dir filesep 'preprocessing_data.mat'];
+    preprocessing_data_fn     = [results_dir filesep 'preprocessing.mat'];
+    init_data_fn              = [results_dir filesep 'init.mat'];
+    mpp_data_fn               = [results_dir filesep 'mpp.mat'];
 
+    % We preprocess fragment images if asked or needed
     if recompute_preprocessing || ~isfile(preprocessing_data_fn)
         % Message
-        ttt = tic;
         msg(sprintf('+ preprocessing fragments'), verbose);
+
+        % Starting timer
+        ttt = tic;
 
         % We set some useful variables
         nearby_frags_gap = gen_parameters.nearby_frags_gap;
@@ -126,7 +132,7 @@ function [final_frags_sol,final_frags_infos] = run_reconstruction_from_loaded_da
             [~,im_frag_alpha_nn]                  = bwdist(im_frag_alpha, 'euclidean');
             [im_frag_alpha_nny,im_frag_alpha_nnx] = ind2sub(size(im_frag_alpha_nn), im_frag_alpha_nn);
 
-            % We store and display the extracted elements
+            % We add the fragment to the list
             frag_info = struct('alpha', im_frag_alpha, 'alpha_d', im_frag_alpha_d, 'color', im_frag_color, 'gray', im_frag_gray, 'gray_ext', im_frag_gray_ext, ...
                                'nny', im_frag_alpha_nny, 'nnx', im_frag_alpha_nnx, 'gray_ext_grad_x', im_frag_gray_ext_grad_x, 'gray_ext_grad_y', im_frag_gray_ext_grad_y, 'area', frag_area_t, ...
                                'std', frag_std, 'size', frag_size, 'outer_circle_center', outer_circle_center, 'outer_circle_radius', outer_circle_radius, ...
@@ -134,18 +140,20 @@ function [final_frags_sol,final_frags_infos] = run_reconstruction_from_loaded_da
 
             final_frags_infos{k} = frag_info;
 
+            % Message
             msg(sprintf('  + fragment %d/%d | size=(%d,%d), area=%d, std=%f, inner circle=(%d,%d)|%.2f, outer circle=(%.2f,%.2f)|%.2f', ...
                         k, numel(frags_infos), frag_size, frag_area_t, frag_std, inner_circle_center, inner_circle_radius, outer_circle_center, outer_circle_radius), verbose);
         end
 
+        % Ending timer
         preprocessing_time = toc(ttt);
 
+        % We save results
         if save_intermediate_results
             save(preprocessing_data_fn, 'im_fresco_color', 'im_fresco_gray', 'fresco_nb_pixels', 'fresco_size', 'final_frags_infos', 'preprocessing_time', '-v7.3');
         end
     else
-        msg('+ loading of preprocessing results', verbose);
-
+        msg('+ loading preprocessed fragments', verbose);
         load(preprocessing_data_fn, 'im_fresco_color', 'im_fresco_gray', 'fresco_nb_pixels', 'fresco_size', 'final_frags_infos', 'preprocessing_time');
     end
 
@@ -261,9 +269,85 @@ function [final_frags_sol,final_frags_infos] = run_reconstruction_from_loaded_da
         end
     end
 
-    % We get a first guess of reconstructed fresco
-    final_frags_sol = run_init_reconstruction(im_fresco, final_frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
+    % Firstly, we construct the initialization if asked or needed
+    if recompute_init || ~isfile(init_data_fn)
+        % Message
+        msg(sprintf('+ building initialization'), verbose);
 
-    % Then, we apply MPP-based optimization to get a refined solution
-    %final_frags_sol = run_mpp_reconstruction(im_fresco, final_frags_infos, init_frags_sol, general_parameters, mpp_parameters, gen_parameters, geometric_constraints);
+        % Starting timer
+        ttt = tic;
+
+        if sum(sum(im_fresco(:,:,4)>0))==0
+            % We deal with the case where the fresco image is unavailable
+            msg(sprintf('  + blind placement'), verbose);
+            init_frags_sol = run_init_blind_reconstruction(im_fresco, final_frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
+        else
+            % We deal with the case where the fresco image is at least partially available
+            msg(sprintf('  + non-blind placement'), verbose);
+            init_frags_sol = init_non_blind_reconstruction(im_fresco, final_frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
+        end
+
+        % Ending timer
+        init_time = toc(ttt);
+
+        % We save results
+        if save_intermediate_results
+            % Message
+            msg('  + saving results', verbose);
+
+            % PNG files
+            [im_init_rec_gray,~,im_init_rec_color] = get_reconstructed_fresco(im_fresco_color, final_frags_infos, init_frags_sol, interpolation_type, background_color);
+            imwrite(im_init_rec_gray, [results_dir filesep 'init_rec_gray.png']);
+            imwrite(im_init_rec_color, [results_dir filesep 'init_rec_color.png']);
+
+            % MAT file
+            time = toc(ttt);
+            save(init_data_fn, 'init_frags_sol', 'im_init_rec_gray', 'im_init_rec_color', 'init_time', '-v7.3');
+        end
+    else
+        % We load results
+        msg(sprintf('+ loading initialization'), verbose);
+        load(init_data_fn, 'init_frags_sol', 'im_init_rec_gray', 'im_init_rec_color', 'init_time');
+    end
+
+    % Secondly, we apply MPP-based optimization to get a refined solution
+    if recompute_mpp || ~isfile(mpp_data_fn)
+        % Message
+        msg(sprintf('+ mpp-based optimization'), verbose);
+
+        % Starting timer
+        ttt = tic;
+
+        if sum(sum(im_fresco(:,:,4)>0))==0
+            % We deal with the case where the fresco image is unavailable
+            msg(sprintf('  + blind placement'), verbose);
+            frags_sol = run_mpp_blind_reconstruction(im_fresco, init_frags_sol, final_frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
+        else
+            % We deal with the case where the fresco image is at least partially available
+            msg(sprintf('  + non-blind placement'), verbose);
+            frags_sol = mpp_non_blind_reconstruction(im_fresco, final_frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
+        end
+
+        % Ending timer
+        mpp_time = toc(ttt);
+
+        % We save results
+        if save_intermediate_results
+            % Message
+            msg('  + saving results', verbose);
+
+            % PNG files
+            [im_mpp_rec_gray,~,im_init_rec_color] = get_reconstructed_fresco(im_fresco_color, final_frags_infos, frags_sol, interpolation_type, background_color);
+            imwrite(im_mpp_rec_gray, [results_dir filesep 'mpp_rec_gray.png']);
+            imwrite(im_mpp_rec_color, [results_dir filesep 'mpp_rec_color.png']);
+
+            % MAT file
+            time = toc(ttt);
+            save(init_data_fn, 'frags_sol', 'im_init_rec_gray', 'im_init_rec_color', 'mpp_time', '-v7.3');
+        end
+    else
+        % We load results
+        msg(sprintf('+ loading initialization'), verbose);
+        load(init_data_fn, 'mpp_frags_sol', 'im_mpp_rec_gray', 'im_mpp_rec_color', 'mpp_time');
+    end
 end

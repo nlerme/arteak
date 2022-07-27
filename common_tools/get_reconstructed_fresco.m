@@ -12,7 +12,7 @@
 % Outputs:
 %   * im_filled_frags:  reconstructed fresco with numbered filled fragments (uint64 image)
 %   * im_bnd_frags:     reconstructed fresco with numbered boundaries of fragments (uint64 image)
-%   * im_rec_frags:     reconstructed fresco with colored fragments (uint8 color image without alpha channel)
+%   * im_rec_frags:     reconstructed fresco with colored fragments (uint8 color image)
 function [im_filled_frags,im_bnd_frags,im_rec_frags] = get_reconstructed_fresco( im_fresco, frags_infos, frags_sol, interpolation_type, background_color )
     % We get the size of fresco and number of channels
     fresco_size = size(im_fresco);

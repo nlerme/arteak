@@ -37,10 +37,10 @@ function frags_sol = run_init_blind_reconstruction( im_fresco, frags_infos, gene
             end
 
             % We try to place the chosen fragment image
-            is_placed   = false;
-            nb_attempts = 0;
+            is_placed = false;
+            nb_frags  = 0;
 
-            while ~is_placed && nb_attempts<max_nb_attempts
+            while ~is_placed && nb_frags<max_nb_attempts
                 % We choose an angle of rotation uniformly at random
                 if isempty(geometric_constraints.orientations)
                     angle = 360.0*rand(1);
@@ -52,12 +52,11 @@ function frags_sol = run_init_blind_reconstruction( im_fresco, frags_infos, gene
                 frag = place_fragment(frags_infos, idx, translation, angle, frags_sol, im_fresco, interpolation_type);
 
                 if ~isempty(frag)
-                    % We add it to the list
+                    nb_frags = nb_frags+1;
+                else
                     frags_sol          = [frags_sol,{frag}];
                     is_placed          = true;
                     frags_counter(idx) = frags_counter(idx)+1;
-                else
-                    nb_attempts = nb_attempts+1;
                 end
             end
         end

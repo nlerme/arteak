@@ -33,7 +33,7 @@ function varargout = arteak_gui( varargin )
     g_mydata.im_fresco                = [];
     g_mydata.frags_infos              = {};
     g_mydata.im_recs_color            = {};
-    g_mydata.im_recs_gray             = {};
+    g_mydata.im_recs_filled           = {};
     g_mydata.frags_sols               = {};
     g_mydata.gen_parameters           = [];
     g_mydata.geometric_constraints    = [];
@@ -1402,7 +1402,7 @@ function varargout = arteak_gui( varargin )
             im_tmp1                      = cat(3, im_rec_color, g_mydata.im_fresco(:,:,end));
             im_tmp2                      = cat(3, im_rec_gray, g_mydata.im_fresco(:,:,end));
             g_mydata.im_recs_color       = {g_mydata.im_recs_color{:},im_tmp1};
-            g_mydata.im_recs_gray        = {g_mydata.im_recs_gray{:},im_tmp2};
+            g_mydata.im_recs_filled      = {g_mydata.im_recs_filled{:},im_tmp2};
             g_mydata.frags_sols          = {g_mydata.frags_sols{:},frags_sol};
             set(g_h_reconstructions_listbox, 'string', {items{:},directories{k}});
 
@@ -1435,27 +1435,27 @@ function varargout = arteak_gui( varargin )
             return;
         end
 
-        current_idx       = get(g_h_reconstructions_listbox, 'value');
-        current_dirs      = get(g_h_reconstructions_listbox, 'string');
-        new_frags_sols    = {};
-        new_im_recs_gray  = {};
-        new_im_recs_color = {};
-        new_dirs          = {};
-        idx               = 1;
+        current_idx        = get(g_h_reconstructions_listbox, 'value');
+        current_dirs       = get(g_h_reconstructions_listbox, 'string');
+        new_frags_sols     = {};
+        new_im_recs_filled = {};
+        new_im_recs_color  = {};
+        new_dirs           = {};
+        idx                = 1;
 
         for k=1:numel(g_mydata.im_recs_color)
             if k~=current_idx
-                new_frags_sols{idx}    = g_mydata.frags_sols{k};
-                new_im_recs_color{idx} = g_mydata.im_recs_color{k};
-                new_im_recs_gray{idx}  = g_mydata.im_recs_gray{k};
-                new_dirs{idx}          = current_dirs{k};
-                idx                    = idx + 1;
+                new_frags_sols{idx}     = g_mydata.frags_sols{k};
+                new_im_recs_color{idx}  = g_mydata.im_recs_color{k};
+                new_im_recs_filled{idx} = g_mydata.im_recs_filled{k};
+                new_dirs{idx}           = current_dirs{k};
+                idx                     = idx + 1;
             end
         end
 
-        g_mydata.frags_sols    = new_frags_sols;
-        g_mydata.im_recs_color = new_im_recs_color;
-        g_mydata.im_recs_gray  = new_im_recs_gray;
+        g_mydata.frags_sols     = new_frags_sols;
+        g_mydata.im_recs_color  = new_im_recs_color;
+        g_mydata.im_recs_filled = new_im_recs_filled;
         set(g_h_reconstructions_listbox, 'string', new_dirs);
 
         % We set the current image as empty
@@ -1487,7 +1487,7 @@ function varargout = arteak_gui( varargin )
 
         g_mydata.frags_sols       = {};
         g_mydata.im_recs_color    = {};
-        g_mydata.im_recs_gray     = {};
+        g_mydata.im_recs_filled   = {};
         g_mydata.im_current       = [];
         g_mydata.current_recs_idx = -1;
         set(g_h_reconstructions_listbox, 'string', {});
@@ -1508,22 +1508,22 @@ function varargout = arteak_gui( varargin )
         end
 
         % We move up the current element
-        current_frags_sols = g_mydata.frags_sols;
-        current_recs_color = g_mydata.im_recs_color;
-        current_recs_gray  = g_mydata.im_recs_gray;
-        current_dirs       = get(g_h_reconstructions_listbox, 'string');
-        current_idx        = get(g_h_reconstructions_listbox, 'value');
-        new_idx            = mod(current_idx-2, numel(current_dirs))+1;
+        current_frags_sols  = g_mydata.frags_sols;
+        current_recs_color  = g_mydata.im_recs_color;
+        current_recs_filled = g_mydata.im_recs_filled;
+        current_dirs        = get(g_h_reconstructions_listbox, 'string');
+        current_idx         = get(g_h_reconstructions_listbox, 'value');
+        new_idx             = mod(current_idx-2, numel(current_dirs))+1;
 
-        [current_frags_sols{new_idx},current_frags_sols{current_idx}] = swap_vars(current_frags_sols{current_idx}, current_frags_sols{new_idx});
-        [current_recs_color{new_idx},current_recs_color{current_idx}] = swap_vars(current_recs_color{current_idx}, current_recs_color{new_idx});
-        [current_recs_gray{new_idx},current_recs_gray{current_idx}]   = swap_vars(current_recs_gray{current_idx}, current_recs_gray{new_idx});
-        [current_dirs{new_idx},current_dirs{current_idx}]             = swap_vars(current_dirs{current_idx}, current_dirs{new_idx});
+        [current_frags_sols{new_idx},current_frags_sols{current_idx}]    = swap_vars(current_frags_sols{current_idx}, current_frags_sols{new_idx});
+        [current_recs_color{new_idx},current_recs_color{current_idx}]    = swap_vars(current_recs_color{current_idx}, current_recs_color{new_idx});
+        [current_recs_filled{new_idx},current_recs_filled{current_idx}]  = swap_vars(current_recs_filled{current_idx}, current_recs_filled{new_idx});
+        [current_dirs{new_idx},current_dirs{current_idx}]                = swap_vars(current_dirs{current_idx}, current_dirs{new_idx});
 
         set(g_h_reconstructions_listbox, 'string', current_dirs);
-        g_mydata.frags_sols    = current_frags_sols;
-        g_mydata.im_recs_color = current_recs_color;
-        g_mydata.im_recs_gray  = current_recs_gray;
+        g_mydata.frags_sols     = current_frags_sols;
+        g_mydata.im_recs_color  = current_recs_color;
+        g_mydata.im_recs_filled = current_recs_filled;
 
         g_mydata.current_recs_idx = new_idx;
         set(g_h_reconstructions_listbox, 'value', g_mydata.current_recs_idx);
@@ -1542,22 +1542,22 @@ function varargout = arteak_gui( varargin )
         end
 
         % We move up the current element
-        current_frags_sols = g_mydata.frags_sols;
-        current_recs_color = g_mydata.im_recs_color;
-        current_recs_gray  = g_mydata.im_recs_gray;
-        current_dirs       = get(g_h_reconstructions_listbox, 'string');
-        current_idx        = get(g_h_reconstructions_listbox, 'value');
-        new_idx            = mod(current_idx, numel(current_dirs))+1;
+        current_frags_sols  = g_mydata.frags_sols;
+        current_recs_color  = g_mydata.im_recs_color;
+        current_recs_filled = g_mydata.im_recs_filled;
+        current_dirs        = get(g_h_reconstructions_listbox, 'string');
+        current_idx         = get(g_h_reconstructions_listbox, 'value');
+        new_idx             = mod(current_idx, numel(current_dirs))+1;
 
-        [current_frags_sols{new_idx},current_frags_sols{current_idx}] = swap_vars(current_frags_sols{current_idx}, current_frags_sols{new_idx});
-        [current_recs_color{new_idx},current_recs_color{current_idx}] = swap_vars(current_recs_color{current_idx}, current_recs_color{new_idx});
-        [current_recs_gray{new_idx},current_recs_gray{current_idx}]   = swap_vars(current_recs_gray{current_idx}, current_recs_gray{new_idx});
-        [current_dirs{new_idx},current_dirs{current_idx}]             = swap_vars(current_dirs{current_idx}, current_dirs{new_idx});
+        [current_frags_sols{new_idx},current_frags_sols{current_idx}]   = swap_vars(current_frags_sols{current_idx}, current_frags_sols{new_idx});
+        [current_recs_color{new_idx},current_recs_color{current_idx}]   = swap_vars(current_recs_color{current_idx}, current_recs_color{new_idx});
+        [current_recs_filled{new_idx},current_recs_filled{current_idx}] = swap_vars(current_recs_filled{current_idx}, current_recs_filled{new_idx});
+        [current_dirs{new_idx},current_dirs{current_idx}]               = swap_vars(current_dirs{current_idx}, current_dirs{new_idx});
 
         set(g_h_reconstructions_listbox, 'string', current_dirs);
         g_mydata.frags_sols    = current_frags_sols;
         g_mydata.im_recs_color = current_recs_color;
-        g_mydata.im_recs_gray  = current_recs_gray;
+        g_mydata.im_recs_filled  = current_recs_filled;
 
         g_mydata.current_recs_idx = new_idx;
         set(g_h_reconstructions_listbox, 'value', g_mydata.current_recs_idx);
@@ -1764,12 +1764,12 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % We open the reconstruction subwindow
-        [new_frags_sol,new_im_rec_color,new_im_rec_gray,rec_name] = arteak_reconstruction(g_fh_main);
+        [new_frags_sol,new_im_rec_color,new_im_rec_filled,rec_name] = arteak_reconstruction(g_fh_main);
 
         % We check if results are consistent
-        if ~isempty(new_frags_sol) && ~isempty(new_im_rec_color) && ~isempty(new_im_rec_gray)
+        if ~isempty(new_frags_sol) && ~isempty(new_im_rec_color) && ~isempty(new_im_rec_filled)
             % If so, we add results to their respective arrays
-            g_mydata.im_recs_gray  = {g_mydata.im_recs_gray{:},new_im_rec_gray};
+            g_mydata.im_recs_filled  = {g_mydata.im_recs_filled{:},new_im_rec_filled};
             g_mydata.im_recs_color = {g_mydata.im_recs_color{:},new_im_rec_color};
             g_mydata.frags_sols    = {g_mydata.frags_sols{:},new_frags_sol};
 
@@ -1826,7 +1826,7 @@ function varargout = arteak_gui( varargin )
         % We unload reconstructions data
         if numel(g_mydata.im_recs_color)>0
             g_mydata.im_recs_color    = {};
-            g_mydata.im_recs_gray     = {};
+            g_mydata.im_recs_filled   = {};
             g_mydata.current_recs_idx = -1;
             clear_view                = true;
             set(g_h_reconstructions_listbox, 'string', {});
