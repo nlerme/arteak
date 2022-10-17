@@ -9,8 +9,8 @@
 %   * mpp_parameters:      value of MPP parameters (non empty cell array)
 % 
 % Outputs:
-%   * best_frags_sol:  best subset of fragments
-%   * energy:      value of the functional of the selected fragments
+%   * best_frags_sol:  best subset of fragments (cell array) 
+%   * energy:      value of the functional of the selected fragments (real)
 function [best_frags_sol,energy] = select_best_fragments( current_frags_sol, new_frags_sol, general_parameters, mpp_parameters )
     % We initialize some useful variables
     verbose  = get_parameter_value(general_parameters, 'verbose');

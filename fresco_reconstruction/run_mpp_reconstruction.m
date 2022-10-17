@@ -14,7 +14,7 @@
 %   * frags_gt:               ground truth ([non empty] cell array)
 % 
 % Outputs:
-%   * best_frags_sol:  resulting solution composed of fragments ([non empty] cell array)
+%   * best_frags_sol:  resulting solution composed of fragments (cell array)
 function best_frags_sol = run_mpp_reconstruction( im_fresco_color, im_fresco_alpha, init_frags_sol, frags_infos, general_parameters, init_parameters, mpp_parameters, gen_parameters, geometric_constraints, frags_gt )
     % We convert the fresco image to normalized grayscale intensities to speed up
     im_fresco_alpha2 = uint8(im_fresco_alpha>0);
@@ -42,7 +42,7 @@ function best_frags_sol = run_mpp_reconstruction( im_fresco_color, im_fresco_alp
     % We alternate sampling and selection steps for a number of iterations
     energies          = zeros(1,nb_iterations);
     nb_detections     = zeros(1,nb_iterations);
-    current_frags_sol = init_frags_sol;
+    current_frags_sol = frags_gt;
 
     for it=1:nb_iterations
         % We get a new sample of fragments randomly selected
@@ -54,11 +54,12 @@ function best_frags_sol = run_mpp_reconstruction( im_fresco_color, im_fresco_alp
         current_frags_sol = all_frags_sol(1:numel(current_frags_sol));
         new_frags_sol     = all_frags_sol(numel(current_frags_sol) + (1:numel(new_frags_sol)));
 
-        %best_frags_sol    = all_frags_sol;
+        best_frags_sol    = all_frags_sol;
         for i=1:numel(all_frags_sol)
-            disp(sprintf('idx=%d, E_d=%f', all_frags_sol{i}.idx, all_frags_sol{i}.E_d));
+            %disp(sprintf('idx=%d, E_d=%f, E_a=%f, E_inc=%f', all_frags_sol{i}.idx, all_frags_sol{i}.E_d, all_frags_sol{i}.E_a, all_frags_sol{i}.E_inc));
+            all_frags_sol{i}.N_sf
         end
-        %return;
+        return;
 
         % Graph cuts-based fragments selection
         [best_frags_sol,energy] = select_best_fragments(current_frags_sol, new_frags_sol, general_parameters, mpp_parameters);
