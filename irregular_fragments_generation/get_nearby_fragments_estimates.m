@@ -46,7 +46,7 @@ function [ifd2,frags_sol_out] = get_nearby_fragments_estimates( im_rec, frags_so
         d_coeff_sigma = 1;
         d_coeff       = (d_coeff_max-d_coeff_min)*exp(-(ifd1-1)/(2*d_coeff_sigma^2))+d_coeff_min;
         radius        = round(double(d_coeff*ifd1));
-        im_tmp3       = (imdilate(im_tmp1, strel('disk', radius)) & im_tmp2);
+        im_tmp3       = (imdilate(im_tmp1, strel('disk', radius, 0)) & im_tmp2);
         idx           = find(im_tmp3>0);
         neighbors_idx = unique(im_rec(idx))';
 

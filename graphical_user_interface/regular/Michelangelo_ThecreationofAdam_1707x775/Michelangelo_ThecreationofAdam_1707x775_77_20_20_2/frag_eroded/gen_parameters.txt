@@ -1,4 +1,0 @@
-fragment_size 77
-missing_rate 20.000000
-spurious_rate 20.000000
-nearby_frags_gap 2.000000

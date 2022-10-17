@@ -22,7 +22,7 @@ function decision = save_registered_fragments_list( frags_sol, frags_infos, fn )
         a   = frags_sol{k}.angle;
         q   = apply_forward_transform(frags_infos{idx}.offset, [0,0], a, [0,0]);
         t   = frags_sol{k}.translation+q;
-        fprintf(fp, '%d %f %f %f\n', idx-1, t(2), t(1), a);
+        fprintf(fp, '%d %f %f %f\n', idx-1, t(2), t(1), -a);
     end
 
     decision = true;

@@ -1,1 +1,0 @@
-nearby_frags_gap 1.000000

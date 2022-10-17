@@ -1,11 +1,11 @@
 % Function computing a graph coloring using greedy algorithm.
 % 
 % Inputs:
-%   * input_frags:  input collection of fragments
+%   * input_frags:  input collection of fragments (cell array)
 % 
 % Outputs:
-%   * output_frags:  output collection of fragments
-%   * nb_colors:     number of colors used for coloring the graph
+%   * output_frags:  output collection of fragments (cell array)
+%   * nb_colors:     number of colors used for coloring the graph (N_{>=1})
 function [output_frags,nb_colors] = compute_graph_coloring_greedy( input_frags )
     % If the number of fragments is null, we assign a null color index to each fragment
     if numel(input_frags)==0

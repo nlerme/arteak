@@ -15,4 +15,7 @@ function [translation,angle,scaling_factor] = get_transform_parameters( tform, i
     translation = [tform.T(3,2)+half_size(2)*(sc-ss),tform.T(3,1)+half_size(1)*(sc+ss)];
     scaling_factor = sqrt(ss^2+sc^2);
     angle = -rad2deg(atan2(ss,sc));
+    if angle<=0
+        angle = angle+360.0;
+    end
 end

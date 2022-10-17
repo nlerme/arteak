@@ -22,11 +22,11 @@ function [tp,fp,tn,fn,acc,fm,tr_err,rot_err,ina] = compare_solution_to_gt( frags
     fp      = [];
     tn      = [];
     fn      = [];
-    frags2  = cell(1, nb_frags);
-    gt2     = cell(1, nb_frags);
     tr_err  = [];
     rot_err = [];
     ina     = [];
+    frags2  = cell(1, nb_frags);
+    gt2     = cell(1, nb_frags);
 
     for k=1:length(frags)
         frags2{frags{k}.idx} = frags{k};
@@ -39,14 +39,17 @@ function [tp,fp,tn,fn,acc,fm,tr_err,rot_err,ina] = compare_solution_to_gt( frags
     for k=1:nb_frags
         if ~isempty(frags2{k})
             if ~isempty(gt2{k})
-                if is_fragment_identical_to_gt(frags2{k}, gt2{k}, tt, at)
+                [t,r,decision] = compare_fragments_parameters(frags2{k}, gt2{k}, tt, at);
+
+                if decision
                     tp = [tp,k];
                 else
                     fp  = [fp,k];
                     ina = [ina,k];
                 end
-                tr_err  = [tr_err,[k;norm(frags2{k}.translation-gt2{k}.translation)]];
-                rot_err = [rot_err,[k;get_angular_difference(frags2{k}.angle,gt2{k}.angle)]];
+
+                tr_err  = [tr_err,[k;t]];
+                rot_err = [rot_err,[k;r]];
             else
                 fp = [fp,k];
             end
