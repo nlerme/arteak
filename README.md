@@ -20,13 +20,18 @@ placement step is performed in the continuous domain using gradient descent. Fin
 
 An example of execution of the graphical user interface is shown below:
 
-![Screenshot](https://ibb.co/mhZQ4VR)
+![Screenshot](https://i.ibb.co/8PvF9Lm/screenshot.png)
 
 References
 ----------
 [1] DAFNE: A dataset of fresco fragments for digital anastlylosis. P. Dondi, L. Lombardi, A. Setti, Pattern Recognition Letters, volume 138, pages 631-637, 2020.
+
 [2] N. Lermé, S. Le Hégarat-Mascle, B. Zhang, E. Aldea, Fast and Efficient Reconstruction of Digitized Frescoes, Pattern Recognition Letters, 138, 417-423, 2020.
+
 [3] Automatic Reconstruction of Digitized Frescoes, N. Lermé, S. Le Hégarat-Mascle, F. Malgouyres, G. Alkan. Preprint, 2022.
+
 [4] Efficient Approximate Energy Minimization via Graph Cuts. Y. Boykov, O. Veksler, R.Zabih. IEEE Transactions on Pattern Analysis and Machine Intelligence, 20(12):1222-1239, 2001.
+
 [5] What Energy Functions can be Minimized via Graph Cuts? V. Kolmogorov, R.Zabih. IEEE Transactions on Pattern Analysis and Machine Intelligence, 26(2):147-159, 2004. 
+
 [6] An Experimental Comparison of Min-Cut/Max-Flow Algorithms for Energy Minimization in Vision. Y. Boykov, V. Kolmogorov. IEEE Transactions on Pattern Analysis and Machine Intelligence, 26(9):1124-1137, 2004.
