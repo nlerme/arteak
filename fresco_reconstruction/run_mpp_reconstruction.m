@@ -54,13 +54,13 @@ function best_frags_sol = run_mpp_reconstruction( im_fresco_color, im_fresco_alp
         current_frags_sol = all_frags_sol(1:numel(current_frags_sol));
         new_frags_sol     = all_frags_sol(numel(current_frags_sol) + (1:numel(new_frags_sol)));
 
-        best_frags_sol    = all_frags_sol;
-        for i=1:numel(all_frags_sol)
-            %all_frags_sol{i}.E_a
-            sum(all_frags_sol{i}.E_sf)
-        end
-        %min(cellfun(@(x) sum(x.E_sf), all_frags_sol))
-        %max(cellfun(@(x) sum(x.E_sf), all_frags_sol))
+        %best_frags_sol    = all_frags_sol;
+        %for i=1:numel(all_frags_sol)
+        %    disp(sprintf('idx=%d | E_sf=%f, nb_neighbors=%d', all_frags_sol{i}.idx, sum(all_frags_sol{i}.E_sf), numel(all_frags_sol{i}.N_sf)));
+        %end
+        %disp('-------------');
+        min(cellfun(@(x) sum(x.E_sf), all_frags_sol))
+        max(cellfun(@(x) sum(x.E_sf), all_frags_sol))
         %return;
 
         % Graph cuts-based fragments selection
