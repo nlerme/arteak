@@ -36,7 +36,7 @@ function generate_dataset()
         input_frescoes_fns       = get_files_list(input_frescoes_dir);                     % Input fresco filenames (string)
         output_frescoes_dir      = ['..' filesep '..' filesep 'data' filesep 'regular'];   % Output frescoes directory (string)
         background_color         = [0,0,0];                                                % RGB color of reconstructed fresco (in [0,1]^3)
-        purge_dataset            = true;                                                   % Enables/disables destruction of anterior dataset
+        purge_dataset            = true;                                                   % Enables/disables destruction of previous version of dataset
         idx_color                = 'white';                                                % Color of fragment index in reconstructed fresco (string or [0,1]^3)
         neighbors_color          = 'cyan';                                                 % Color of neighboring relationships between fragments in reconstructed fresco (string or [0,1]^3)
 

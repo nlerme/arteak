@@ -40,14 +40,16 @@ function best_frags_sol = run_mpp_reconstruction( im_fresco_color, im_fresco_alp
     best_frags_sol = {};
 
     % We alternate sampling and selection steps for a number of iterations
-    energies          = zeros(1,nb_iterations);
+    all_energies      = zeros(1,nb_iterations);
+    all_nb_colors     = zeros(1,nb_iterations);
     nb_detections     = zeros(1,nb_iterations);
-    current_frags_sol = frags_gt;
+    current_frags_sol = init_frags_sol;
 
     for it=1:nb_iterations
         % We get a new sample of fragments randomly selected
+        new_frags_sol = frags_gt{8};
         %new_frags_sol = run_init_blind_reconstruction(im_fresco_color, im_fresco_alpha, frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
-        new_frags_sol = {};
+        %new_frags_sol = {};
 
         % Gradient-based fragments placement
         all_frags_sol     = adjust_fragments_position(im_fresco_gray, im_fresco_alpha, im_fresco_grads, frags_infos, [current_frags_sol,new_frags_sol], general_parameters, mpp_parameters, gen_parameters, geometric_constraints);
@@ -55,23 +57,49 @@ function best_frags_sol = run_mpp_reconstruction( im_fresco_color, im_fresco_alp
         new_frags_sol     = all_frags_sol(numel(current_frags_sol) + (1:numel(new_frags_sol)));
 
         %best_frags_sol    = all_frags_sol;
+        all_frags_sol{7}.idx
+        cellfun(@(x) x.idx, all_frags_sol(all_frags_sol{7}.N_c))
+        cellfun(@(x) x.idx, all_frags_sol(all_frags_sol{7}.N_sf))
+        cellfun(@(x) x.idx, all_frags_sol(all_frags_sol{7}.N_no))
         %for i=1:numel(all_frags_sol)
-        %    disp(sprintf('idx=%d | E_sf=%f, nb_neighbors=%d', all_frags_sol{i}.idx, sum(all_frags_sol{i}.E_sf), numel(all_frags_sol{i}.N_sf)));
+        %    %disp(sprintf('i=%d (idx=%d) | N_sf', i, all_frags_sol{i}.idx, all_frags_sol{i}.E_a));
+        %    all_frags_sol{i}.idx
+        %    cellfun(@(x) x.idx, all_frags_sol(all_frags_sol{i}.N_sf))
+        %    disp('-------------');
         %end
         %disp('-------------');
-        min(cellfun(@(x) sum(x.E_sf), all_frags_sol))
-        max(cellfun(@(x) sum(x.E_sf), all_frags_sol))
+        %min(cellfun(@(x) sum(x.E_sf), all_frags_sol))
+        %max(cellfun(@(x) sum(x.E_sf), all_frags_sol))
         %return;
 
         % Graph cuts-based fragments selection
-        [best_frags_sol,energy] = select_best_fragments(current_frags_sol, new_frags_sol, general_parameters, mpp_parameters);
+        [best_frags_sol,energy,nb_colors] = select_best_fragments(current_frags_sol, new_frags_sol, general_parameters, mpp_parameters, frags_gt);
 
         % Message
-        msg(sprintf('  + iteration %d | #current_frags=%d, #new_frags=%d, #best_frags=%d', it, numel(current_frags_sol), numel(new_frags_sol), numel(best_frags_sol)), verbose);
+        msg(sprintf('  + iteration %d | #current_frags=%d, #new_frags=%d, #best_frags=%d, nb_colors=%d, energy=%f', it, numel(current_frags_sol), numel(new_frags_sol), numel(best_frags_sol), nb_colors, energy), verbose);
 
         % Assignments
         current_frags_sol = best_frags_sol;
-        energies(it)      = energy;
+        all_energies(it)  = energy;
+        all_nb_colors(it) = nb_colors;
         nb_detections(it) = numel(current_frags_sol);
     end
+
+%     % We plot energy with respect to iteration number
+%     figure;
+%     hold on;
+%     grid on;
+%     xlabel('Iteration number');
+%     ylabel('Energy');
+%     xlim([1,nb_iterations]);
+%     plot(1:nb_iterations, all_energies);
+% 
+%     % We plot number of colors with respect to iteration number
+%     figure;
+%     hold on;
+%     grid on;
+%     xlabel('Iteration number');
+%     ylabel('Number of colors');
+%     xlim([1,nb_iterations]);
+%     plot(1:nb_iterations, all_nb_colors);
 end

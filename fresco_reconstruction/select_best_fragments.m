@@ -10,10 +10,12 @@
 % 
 % Outputs:
 %   * best_frags_sol:  best subset of fragments (cell array) 
-%   * energy:      value of the functional of the selected fragments (real)
-function [best_frags_sol,energy] = select_best_fragments( current_frags_sol, new_frags_sol, general_parameters, mpp_parameters )
+%   * energy:          value of the functional of the selected fragments (real)
+%   * nb_colors:       number of colors used for coloring the adjacency graph (integer, >=1)
+function [best_frags_sol,energy,nb_colors] = select_best_fragments( current_frags_sol, new_frags_sol, general_parameters, mpp_parameters, frags_gt )
     % We initialize some useful variables
-    verbose  = get_parameter_value(general_parameters, 'verbose');
+    %verbose  = get_parameter_value(general_parameters, 'verbose');
+    verbose  = false;
     beta_d   = get_parameter_value(mpp_parameters, 'beta_d');   % Weighting parameter for the term E_d
     beta_a   = get_parameter_value(mpp_parameters, 'beta_a');   % Weighting parameter for the term E_a
     beta_inc = get_parameter_value(mpp_parameters, 'beta_inc'); % Weighting parameter for the term E_{inc}
@@ -47,8 +49,9 @@ function [best_frags_sol,energy] = select_best_fragments( current_frags_sol, new
                 idx = find(all_frags_sol{i}.N_c==j);
 
                 if ~isempty(idx)
-                    ok = true;
+                    ok   = true;
                     cost = cost + beta_c*all_frags_sol{i}.E_c(idx);
+                    %disp('uniqueness................');
                 end
             end
 
@@ -57,18 +60,54 @@ function [best_frags_sol,energy] = select_best_fragments( current_frags_sol, new
                 idx2 = find(all_frags_sol{j}.N_no==i);
 
                 if ~isempty(idx1) && ~isempty(idx2)
-                    ok = true;
+                    ok   = true;
                     cost = cost + beta_no*0.5*(all_frags_sol{i}.E_no(idx1)+all_frags_sol{j}.E_no(idx2));
+                    %disp('non overlapping................');
                 end
             end
 
             if beta_sf>0
+%                 idx1 = find(all_frags_sol{i}.N_sf==j);
+%                 idx2 = find(all_frags_sol{j}.N_sf==i);
+% 
+%                 if ~isempty(idx1) && ~isempty(idx2)
+%                     ok   = true;
+%                     cost = cost + beta_sf*0.5*(all_frags_sol{i}.E_sf(idx1)+all_frags_sol{j}.E_sf(idx2));
+%                 end
+
                 idx1 = find(all_frags_sol{i}.N_sf==j);
                 idx2 = find(all_frags_sol{j}.N_sf==i);
 
                 if ~isempty(idx1) && ~isempty(idx2)
-                    ok = true;
-                    cost = cost + beta_sf*0.5*(all_frags_sol{i}.E_sf(idx1)+all_frags_sol{j}.E_sf(idx2));
+                    ii = find(cellfun(@(x) x.idx==all_frags_sol{i}.idx, frags_gt));
+    
+                    if ~isempty(ii)
+                        neighbors = frags_gt(frags_gt{ii}.neighbors);
+                        jj        = find(cellfun(@(x) x.idx==all_frags_sol{j}.idx, neighbors));
+        
+                        if ~isempty(jj)
+                            i_angle        = all_frags_sol{i}.angle;
+                            i_translation  = all_frags_sol{i}.translation;
+                            j_angle        = all_frags_sol{j}.angle;
+                            j_translation  = all_frags_sol{j}.translation;
+                            ii_angle       = frags_gt{ii}.angle;
+                            ii_translation = frags_gt{ii}.translation;
+                            jj_angle       = neighbors{jj}.angle;
+                            jj_translation = neighbors{jj}.translation;
+        
+                            if i_angle~=ii_angle || ...
+                               j_angle~=jj_angle || ...
+                               (j_translation(1)-i_translation(1))~=(jj_translation(1)-ii_translation(1)) || ...
+                               (j_translation(2)-i_translation(2))~=(jj_translation(2)-ii_translation(2))
+                                ok   = true;
+                                cost = cost + beta_sf*1.0;
+                                %disp(sprintf('cost between %d (%d) and %d (%d) | ', i, ii, j, jj));
+                            end
+                        else
+                            ok   = true;
+                            cost = cost + beta_sf*1.0;
+                        end
+                    end
                 end
             end
 
@@ -77,6 +116,7 @@ function [best_frags_sol,energy] = select_best_fragments( current_frags_sol, new
                 offsets2(count) = j;
                 costs(count)    = cost;
                 count           = count + 1;
+                disp(sprintf('cost between i=%d (idx=%d) and j=%d (idx=%d) -> %f', i, all_frags_sol{i}.idx, j, all_frags_sol{j}.idx, cost));
             end
         end
     end
@@ -168,6 +208,11 @@ function [best_frags_sol,energy] = select_best_fragments( current_frags_sol, new
     msg('    + construction of the solution', verbose);
     labeling   = GCO_GetLabeling(h);
     best_frags_sol = {};
+
+    for i=1:numel(all_frags_sol)
+        disp(sprintf('i=%d (idx=%d) | color_idx=%d', i, all_frags_sol{i}.idx, all_frags_sol{i}.color_idx));
+    end
+
     %nodes_idx
     %labeling
 

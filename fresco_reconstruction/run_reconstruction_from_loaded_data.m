@@ -79,7 +79,7 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             [inner_circle_center,inner_circle_radius] = get_inner_circle(im_frag_alpha, outer_circle_center);
 
             % If the fragment is too small, we pad it again and update centers of circles
-            extrapolation_distance = max(10, 3*nearby_frags_gap); % extrapolation gap (must be larger than 2*nearby_frags_gap)
+            extrapolation_distance = max(10, 3*nearby_frags_gap); % extrapolation gap (must be larger than nearby_frags_gap)
             margin                 = (2*extrapolation_distance); % overall gap (must be larger than 2*extrapolation_distance)
             d                      = get_largest_distance(inner_circle_center, im_frag_alpha);
             fs                     = round(d+margin-0.5*min(size(im_frag_alpha)));
@@ -255,8 +255,10 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             [~,im_rec_bnd,im_rec_color] = get_reconstructed_fresco(im_fresco_color, final_frags_infos, frags_gt, interpolation_type, background_color);
             im_rec_bnd                  = uint8((im_rec_bnd>0)*255);
 
-            imwrite(im_rec_bnd, [results_dir filesep 'gt_rec_bnd.png'], 'Alpha', im_fresco_alpha);
-            imwrite(im_rec_color, [results_dir filesep 'gt_rec_color.png'], 'Alpha', im_fresco_alpha);
+            %imwrite(im_rec_bnd, [results_dir filesep 'gt_rec_bnd.png'], 'Alpha', im_fresco_alpha);
+            %imwrite(im_rec_color, [results_dir filesep 'gt_rec_color.png'], 'Alpha', im_fresco_alpha);
+            imwrite(im_rec_bnd, [results_dir filesep 'gt_rec_bnd.png']);
+            imwrite(im_rec_color, [results_dir filesep 'gt_rec_color.png']);
 
             fh = show_reconstructed_fresco(im_rec_bnd, frags_gt, [], [], [], [], [], false, false, false, true, true, show_figures);
             fn = [results_dir filesep 'gt_rec_bnd_n.png'];
@@ -326,8 +328,10 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             % PNG files
             [~,im_init_rec_bnd,im_init_rec_color] = get_reconstructed_fresco(im_fresco_color, final_frags_infos, init_frags_sol, interpolation_type, background_color);
             im_init_rec_bnd                       = uint8(255*(im_init_rec_bnd>0));
-            imwrite(im_init_rec_bnd, [results_dir filesep 'init_rec_bnd.png'], 'Alpha', im_fresco_alpha);
-            imwrite(im_init_rec_color, [results_dir filesep 'init_rec_color.png'], 'Alpha', im_fresco_alpha);
+            %imwrite(im_init_rec_bnd, [results_dir filesep 'init_rec_bnd.png'], 'Alpha', im_fresco_alpha);
+            %imwrite(im_init_rec_color, [results_dir filesep 'init_rec_color.png'], 'Alpha', im_fresco_alpha);
+            imwrite(im_init_rec_bnd, [results_dir filesep 'init_rec_bnd.png']);
+            imwrite(im_init_rec_color, [results_dir filesep 'init_rec_color.png']);
 
             %fh = show_reconstructed_fresco(im_init_rec_color, init_frags_sol, tp, fp, tn, fn, ina, false, false, false, false, true, show_figures);
             %fn = [results_dir filesep 'init_rec_color_n.png'];
@@ -336,7 +340,7 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             %close(fh);
 
             %fh = show_reconstructed_fresco(im_init_rec_bnd, init_frags_sol, tp, fp, tn, fn, ina, false, false, false, false, true, show_figures);
-            %fn = [results_dir filesep 'init_rec_bnd_n.png'];
+            %%fn = [results_dir filesep 'init_rec_bnd_n.png'];
             %saveas(fh, fn);
             %system(sprintf('mogrify -trim %s', fn));
             %close(fh);
@@ -394,8 +398,10 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             % PNG files
             [~,im_mpp_rec_bnd,im_mpp_rec_color] = get_reconstructed_fresco(im_fresco_color, final_frags_infos, mpp_frags_sol, interpolation_type, background_color);
             im_mpp_rec_bnd                      = uint8(255*(im_mpp_rec_bnd>0));
-            imwrite(im_mpp_rec_bnd, [results_dir filesep 'mpp_rec_bnd.png'], 'Alpha', im_fresco_alpha);
-            imwrite(im_mpp_rec_color, [results_dir filesep 'mpp_rec_color.png'], 'Alpha', im_fresco_alpha);
+            %imwrite(im_mpp_rec_bnd, [results_dir filesep 'mpp_rec_bnd.png'], 'Alpha', im_fresco_alpha);
+            %imwrite(im_mpp_rec_color, [results_dir filesep 'mpp_rec_color.png'], 'Alpha', im_fresco_alpha);
+            imwrite(im_mpp_rec_bnd, [results_dir filesep 'mpp_rec_bnd.png']);
+            imwrite(im_mpp_rec_color, [results_dir filesep 'mpp_rec_color.png']);
 
             %fh = show_reconstructed_fresco(im_mpp_rec_color, mpp_frags_sol, tp, fp, tn, fn, ina, false, false, false, false, true, show_figures);
             %fn = [results_dir filesep 'mpp_rec_color_n.png'];
