@@ -2,7 +2,7 @@
 %
 % Anton Osokin (firstname.lastname@gmail.com),  24.09.2014
 
-% % [Dp(0), Dp(1)] - unary terms
+% [Dp(0), Dp(1)] - unary terms
 % terminalWeights=[
 %     0,16;
 %     0,13;

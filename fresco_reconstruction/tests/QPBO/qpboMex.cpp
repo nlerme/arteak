@@ -3,6 +3,7 @@
 #include "QPBO.h"
 #include "mex.h"
 
+#include <ctime>
 #include <limits>
 #include <cmath>
 
@@ -23,6 +24,7 @@ typedef QPBO<double> GraphType;
 void mexFunction(int nlhs, mxArray *plhs[], 
     int nrhs, const mxArray *prhs[])
 {
+    srand(time(NULL));
 	MATLAB_ASSERT( nrhs == 2, "qpboMex: Wrong number of input parameters: expected 2");
     MATLAB_ASSERT( nlhs <= 2, "qpboMex: Too many output arguments: expected 2 or less");
 	
@@ -99,11 +101,13 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	//Solve
 	g -> Solve();
 	g -> ComputeWeakPersistencies();
+    for( int i=0; i<1000; i++ )
+        g -> Improve();
 
 	//output lower bound value
 	if (cOutPtr != NULL){
 		*cOutPtr = mxCreateNumericMatrix(1, 1, mxDOUBLE_CLASS, mxREAL);
-		*(double*)mxGetData(*cOutPtr) = 0.5 * (g -> ComputeTwiceLowerBound());
+		*(double*)mxGetData(*cOutPtr) = 0.5 * (g -> ComputeTwiceEnergy());
 	}
 
 	//output labeling

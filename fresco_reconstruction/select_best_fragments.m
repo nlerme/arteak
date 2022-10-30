@@ -104,6 +104,7 @@ function [best_frags_sol,energy,nb_colors] = select_best_fragments( current_frag
                                 %disp(sprintf('cost between %d (%d) and %d (%d) | ', i, ii, j, jj));
                             end
                         else
+                            %disp(sprintf('cost between %d (%d) and %d (%d) | ', i, all_frags_sol{i}.idx, j, all_frags_sol{j}.idx));
                             ok   = true;
                             cost = cost + beta_sf*1.0;
                         end
@@ -116,7 +117,7 @@ function [best_frags_sol,energy,nb_colors] = select_best_fragments( current_frag
                 offsets2(count) = j;
                 costs(count)    = cost;
                 count           = count + 1;
-                disp(sprintf('cost between i=%d (idx=%d) and j=%d (idx=%d) -> %f', i, all_frags_sol{i}.idx, j, all_frags_sol{j}.idx, cost));
+                %disp(sprintf('cost between i=%d (idx=%d) and j=%d (idx=%d) -> %f', i, all_frags_sol{i}.idx, j, all_frags_sol{j}.idx, cost));
             end
         end
     end
@@ -196,7 +197,8 @@ function [best_frags_sol,energy,nb_colors] = select_best_fragments( current_frag
     msg('    + energy minimization', verbose);
     verbosity_level = 2;
     GCO_SetVerbosity(h, verbosity_level);
-    GCO_SetLabeling(h, init_labeling);
+    %GCO_SetLabeling(h, init_labeling);
+    GCO_SetLabeling(h, randi(nb_labels, 1, nb_sites));
     GCO_Swap(h);
     [E,D,S,~] = GCO_ComputeEnergy(h);
     msg(sprintf('      + data energy = %f', D), verbose);
@@ -209,9 +211,9 @@ function [best_frags_sol,energy,nb_colors] = select_best_fragments( current_frag
     labeling   = GCO_GetLabeling(h);
     best_frags_sol = {};
 
-    for i=1:numel(all_frags_sol)
-        disp(sprintf('i=%d (idx=%d) | color_idx=%d', i, all_frags_sol{i}.idx, all_frags_sol{i}.color_idx));
-    end
+    %for i=1:numel(all_frags_sol)
+    %    disp(sprintf('i=%d (idx=%d) | color_idx=%d', i, all_frags_sol{i}.idx, all_frags_sol{i}.color_idx));
+    %end
 
     %nodes_idx
     %labeling

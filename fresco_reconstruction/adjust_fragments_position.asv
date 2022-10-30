@@ -222,6 +222,7 @@ function [Exk,frags_sol] = eval_E( im_fresco_gray, im_fresco_alpha, frags_infos,
                                 E_sf                = eval_E_sf(frag_i_intensities, frag_j_intensities);
 
                                 if E_sf>5000 % TODO: CHANGE BY E_sf>0
+                                    disp('houhouuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu')
                                     frags_sol{i}.E_sf = [frags_sol{i}.E_sf,E_sf];
                                     frags_sol{i}.N_sf = [frags_sol{i}.N_sf,j];
                                    Exk                = Exk + beta_sf*E_sf;
