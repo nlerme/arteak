@@ -42,12 +42,13 @@ function best_frags_sol = run_mpp_reconstruction( im_fresco_color, im_fresco_alp
     % We alternate sampling and selection steps for a number of iterations
     all_energies      = zeros(1,nb_iterations);
     nb_detections     = zeros(1,nb_iterations);
-    current_frags_sol = init_frags_sol;
+    current_frags_sol = frags_gt;
 
     for it=1:nb_iterations
         % We get a new sample of fragments randomly selected
-        new_frags_sol = run_init_blind_reconstruction(im_fresco_color, im_fresco_alpha, frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
+        %new_frags_sol = run_init_blind_reconstruction(im_fresco_color, im_fresco_alpha, frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
         %new_frags_sol = init_frags_sol;
+        new_frags_sol = {};
 
         % Gradient-based fragments placement
         all_frags_sol     = adjust_fragments_position(im_fresco_gray, im_fresco_alpha, im_fresco_grads, frags_infos, [current_frags_sol,new_frags_sol], general_parameters, mpp_parameters, gen_parameters, geometric_constraints);

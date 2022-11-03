@@ -79,7 +79,7 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             [inner_circle_center,inner_circle_radius] = get_inner_circle(im_frag_alpha, outer_circle_center);
 
             % If the fragment is too small, we pad it again and update centers of circles
-            extrapolation_distance = max(10, 3*nearby_frags_gap); % extrapolation gap (must be larger than nearby_frags_gap)
+            extrapolation_distance = max(5, 3*nearby_frags_gap); % extrapolation gap (must be larger than nearby_frags_gap)
             margin                 = (2*extrapolation_distance); % overall gap (must be larger than 2*extrapolation_distance)
             d                      = get_largest_distance(inner_circle_center, im_frag_alpha);
             fs                     = round(d+margin-0.5*min(size(im_frag_alpha)));
@@ -100,17 +100,22 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             outer_circle_center = outer_circle_center-inner_circle_center+round(0.5*frag_size);
             inner_circle_center = round(0.5*frag_size);
 
-            % We convert fragment image in grayscale levels
-            im_frag_gray = im2double(rgb2gray(im_frag_color));
-
             % We compute eroded and dilated fragment domains
             im_frag_alpha_e = imerode(im_frag_alpha, strel('disk', round(frags_overlap_tolerance), 0));
             im_frag_alpha_d = imdilate(im_frag_alpha, strel('disk', round(extrapolation_distance), 0));
 
             % We do extrapolation on grayscale fragment image
-            im_frag_gray_ext           = inpaintExemplar(im_frag_gray, ~im_frag_alpha, 'FillOrder', 'tensor', 'PatchSize', [5,5]);
+            im_frag_color_ext          = im2double(inpaintExemplar(im_frag_color, ~im_frag_alpha, 'FillOrder', 'tensor', 'PatchSize', [5,5]));
+            im_frag_gray_ext           = rgb2gray(im_frag_color_ext);
+            im_frag_gray               = im2double(rgb2gray(im_frag_color));
             frag_idx                   = find(im_frag_alpha_d==0);
             im_frag_gray_ext(frag_idx) = 0;
+
+            for c=1:size(im_frag_color,3)
+                im_tmp = im_frag_color_ext(:,:,c);
+                im_tmp(frag_idx) = 0;
+                im_frag_color_ext(:,:,c) = im_tmp;
+            end
 
             % We compute gradients of grayscale extrapolated fragment image
             [im_frag_gray_ext_grad_x,im_frag_gray_ext_grad_y] = imgradientxy(im_frag_gray_ext, 'sobel');
@@ -132,7 +137,7 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             coords_e    = [rows,cols];
 
             % We add the fragment to the list
-            frag_info = struct('alpha', im_frag_alpha, 'alpha_d', im_frag_alpha_d, 'alpha_e', im_frag_alpha_e, 'color', im_frag_color, 'gray', im_frag_gray, 'gray_ext', im_frag_gray_ext, ...
+            frag_info = struct('alpha', im_frag_alpha, 'alpha_d', im_frag_alpha_d, 'alpha_e', im_frag_alpha_e, 'color', im_frag_color, 'gray', im_frag_gray, 'color_ext', im_frag_color_ext, 'gray_ext', im_frag_gray_ext, ...
                                'nny', im_frag_alpha_nny, 'nnx', im_frag_alpha_nnx, 'gray_ext_grad_x', im_frag_gray_ext_grad_x, 'gray_ext_grad_y', im_frag_gray_ext_grad_y, ...
                                'area', frag_area, 'std', frag_std, 'size', frag_size, 'outer_circle_center', outer_circle_center, 'outer_circle_radius', outer_circle_radius, ...
                                'inner_circle_center', inner_circle_center, 'inner_circle_radius', inner_circle_radius, 'offset', offset, ...

@@ -49,7 +49,7 @@ function [best_frags_sol,energy,nb_colors] = select_best_fragments( current_frag
                 idx1 = find(all_frags_sol{i}.N_c==j);
                 idx2 = find(all_frags_sol{j}.N_c==i);
 
-                if ~isempty(idx1) && ~isempty(idx2)
+                if ~isempty(idx)
                     ok   = true;
                     cost = cost + beta_c*0.5*(all_frags_sol{i}.E_c(idx1)+all_frags_sol{i}.E_c(idx2));
                     %disp('uniqueness................');

@@ -64,36 +64,37 @@ function [best_frags_sol,energy] = select_best_fragments_qpbo( current_frags_sol
             cost = 0.0;
 
             if beta_c>0
-                idx = find(all_frags_sol{i}.N_c==j);
+                idx1 = find(all_frags_sol{i}.N_c==j);
+                idx2 = find(all_frags_sol{j}.N_c==i);
 
                 if ~isempty(idx)
                     ok   = true;
-                    cost = cost + beta_c*all_frags_sol{i}.E_c(idx);
+                    cost = cost + beta_c*0.5*(all_frags_sol{i}.E_c(idx1)+all_frags_sol{i}.E_c(idx2));
                     %disp('uniqueness................');
                 end
             end
 
             if beta_no>0
-                idx = find(all_frags_sol{i}.N_no==j);
+                idx1 = find(all_frags_sol{i}.N_no==j);
+                idx2 = find(all_frags_sol{j}.N_no==i);
 
-                if ~isempty(idx)
+                if ~isempty(idx1) && ~isempty(idx2)
                     ok   = true;
-                    cost = cost + beta_no*all_frags_sol{i}.E_no(idx);
+                    cost = cost + beta_no*0.5*(all_frags_sol{i}.E_no(idx1)+all_frags_sol{j}.E_no(idx2));
                     %disp('non overlapping................');
                 end
             end
 
             if beta_sf>0
-%                 idx = find(all_frags_sol{i}.N_sf==j);
-% 
-%                 if ~isempty(idx)
+                idx1 = find(all_frags_sol{i}.N_sf==j);
+                idx2 = find(all_frags_sol{j}.N_sf==i);
+
+%                 if ~isempty(idx1) && ~isempty(idx2)
 %                     ok   = true;
-%                     cost = cost + beta_sf*all_frags_sol{i}.E_sf(idx);
+%                     cost = cost + beta_sf*0.5*(all_frags_sol{i}.E_sf(idx1)+all_frags_sol{j}.E_sf(idx2));
 %                 end
 
-                idx = find(all_frags_sol{i}.N_sf==j);
-
-                if ~isempty(idx)
+                if ~isempty(idx1) && ~isempty(idx2)
                     ii = find(cellfun(@(x) x.idx==all_frags_sol{i}.idx, frags_gt));
     
                     if ~isempty(ii)
@@ -114,13 +115,17 @@ function [best_frags_sol,energy] = select_best_fragments_qpbo( current_frags_sol
                                j_angle~=jj_angle || ...
                                (j_translation(1)-i_translation(1))~=(jj_translation(1)-ii_translation(1)) || ...
                                (j_translation(2)-i_translation(2))~=(jj_translation(2)-ii_translation(2))
+                                % Penality
                                 ok   = true;
                                 cost = cost + beta_sf*1.0;
                             else
+                                % Reward
+                                disp(sprintf('forward'))
                                 ok   = true;
                                 cost = cost - beta_sf*1.0;
                             end
                         else
+                            % Penality
                             ok   = true;
                             cost = cost + beta_sf*1.0;
                         end
@@ -139,6 +144,10 @@ function [best_frags_sol,energy] = select_best_fragments_qpbo( current_frags_sol
                 end
             end
         end
+    end
+
+    if isempty(sc)
+        sc = [1,2,0,0,0,0];
     end
 
     % Energy minimization

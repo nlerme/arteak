@@ -85,6 +85,8 @@ function [Exk,frags_sol] = eval_E( im_fresco_gray, im_fresco_alpha, frags_infos,
     nb_channels = size(im_fresco_gray,3);
     Exk         = 0.0;
 
+    all_E_sf = [];
+
     for i=1:numel(frags_sol)
         % We get information about the ith fragment
         frag_i                 = frags_sol{i};
@@ -154,6 +156,7 @@ function [Exk,frags_sol] = eval_E( im_fresco_gray, im_fresco_alpha, frags_infos,
             frag_j_occ         = frags_infos{frag_j.idx}.outer_circle_center;
             frag_j_ocr         = frags_infos{frag_j.idx}.outer_circle_radius;
             im_frag_j_gray_ext = frags_infos{frag_j.idx}.gray_ext;
+            im_frag_j_alpha_d  = frags_infos{frag_j.idx}.alpha_d;
 
             % We add the contribution of the term E_c
             % ---------------------------------------
@@ -170,8 +173,8 @@ function [Exk,frags_sol] = eval_E( im_fresco_gray, im_fresco_alpha, frags_infos,
             % We project the coordinates of the outer circle center of the
             % ith fragment into the jth fragment domain. If the distance
             % separating the two circle centers is larger than the distance
-            % enabling the term E_sf (worst case among all pairse energy 
-            % % terms, we can safely skip this couple of fragments
+            % enabling the term E_sf (worst case among all pairse terms, 
+            % we can safely skip this couple of fragments to speed up
             frag_i_occ_proj = apply_forward_backward_transforms(frag_i_occ, xk_old(i,1:2), xk_old(i,3), frag_i_center, xk_old(j,1:2), xk_old(j,3), frag_j_center);
             max_gap         = (frag_i_ocr+frag_j_ocr+max(extrapolation_distance, frags_overlap_tolerance));
 
@@ -179,8 +182,8 @@ function [Exk,frags_sol] = eval_E( im_fresco_gray, im_fresco_alpha, frags_infos,
                 continue;
             end
 
-            % We add the contribution of the terms E_no and/or E_sf
-            % -----------------------------------------------------
+            % We add the contribution of the terms E_no and E_sf
+            % --------------------------------------------------
             if beta_no>0 || beta_sf>0
                 % We project the pixel coordinates of the ith eroded fragment domain (e(P_wi)) into the frame of the jth fragment domain (P_wj)
                 frag_i_coords_e_Pwj = apply_forward_backward_transforms(frag_i_coords_e, xk_old(i,1:2), xk_old(i,3), frag_i_center, ...
@@ -193,7 +196,7 @@ function [Exk,frags_sol] = eval_E( im_fresco_gray, im_fresco_alpha, frags_infos,
                     frag_i_coords_e_Pwj = frag_i_coords_e_Pwj(keep,:);
 
                     if ~isempty(frag_i_coords_e_Pwj)
-                        % We compute the term E_no
+                        % We add the contribution of the term E_no
                         [E_no,min_dist] = eval_E_no(frags_infos, frag_j, frag_i_coords_e_Pwj, frags_overlap_tolerance, interpolation_type);
         
                         if min_dist<=frags_overlap_tolerance && E_no>0
@@ -203,29 +206,65 @@ function [Exk,frags_sol] = eval_E( im_fresco_gray, im_fresco_alpha, frags_infos,
                         end
 
                         if beta_sf>0 && (min_dist-frags_overlap_tolerance)>0 && (min_dist-frags_overlap_tolerance)<=extrapolation_distance
-                            % We project the pixel coordinates of the ith dilated fragment domain (d(P_wi)) into the frame of the jth dilated fragment domain (d(P_wj))
+                            % We project the pixel coordinates of the ith dilated fragment domain (d(P_wi)) into the frame of the jth fragment domain (P_wj)
                             frag_i_coords_d_Pwj = apply_forward_backward_transforms(frag_i_coords_d, xk_old(i,1:2), xk_old(i,3), frag_i_center, ...
                                                                                                      xk_old(j,1:2), xk_old(j,3), frag_j_center);
 
                             % We only keep projected pixel coordinates that lie into the frame of the jth fragment image
                             keep = find(frag_i_coords_d_Pwj(:,1)>=1 & frag_i_coords_d_Pwj(:,1)<=frag_j_size(1) & frag_i_coords_d_Pwj(:,2)>=1 & frag_i_coords_d_Pwj(:,2)<=frag_j_size(2));
 
-                            % If the fragment P_wi does not lie outside P_wj, we add the contribution of E_sf
+                            % If the projected fragment does not lie outside the frame of the jth fragment image, we add the contribution of the term E_sf
                             if ~isempty(keep)
-                                % We compute the term E_sf
                                 frag_i_coords_d_Pwi = frag_i_coords_d(keep,:);
                                 frag_i_coords_d_Pwj = frag_i_coords_d_Pwj(keep,:);
-                                %frag_i_intensities  = get_intensities(im_frag_i_gray_ext, frag_i_coords_d_Pwi, interpolation_type);
-                                %frag_j_intensities  = get_intensities(im_frag_j_gray_ext, frag_i_coords_d_Pwj, interpolation_type);
-                                frag_i_intensities  = get_intensities(frags_infos{frag_i.idx}.alpha_d, frag_i_coords_d_Pwi, interpolation_type);
-                                frag_j_intensities  = get_intensities(frags_infos{frag_j.idx}.alpha_d, frag_i_coords_d_Pwj, interpolation_type);
-                                E_sf                = eval_E_sf(frag_i_intensities, frag_j_intensities);
 
-                                if E_sf>5000 % TODO: CHANGE BY E_sf>0
-                                    disp('houhouuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu')
-                                    frags_sol{i}.E_sf = [frags_sol{i}.E_sf,E_sf];
-                                    frags_sol{i}.N_sf = [frags_sol{i}.N_sf,j];
-                                   Exk                = Exk + beta_sf*E_sf;
+                                %-----------------
+                                coords  = round(frag_i_coords_d_Pwj);
+                                idx     = sub2ind(frag_j_size, coords(:,1), coords(:,2));
+                                im_tmp  = zeros(frag_j_size);
+                                im_tmp(idx) = get_intensities(im_frag_i_gray_ext, frag_i_coords_d_Pwi, interpolation_type);
+                                %return;
+
+                                coords  = round(frag_i_coords_d_Pwj);
+                                idx     = sub2ind(frag_j_size, coords(:,1), coords(:,2));
+                                keep    = im_frag_j_alpha_d(idx)>0;
+                                %-----------------
+
+                                % We compute the term E_sf
+                                if ~isempty(keep)
+                                    %-------------------------
+                                    frag_i_coords_d_Pwi = frag_i_coords_d_Pwi(keep,:);
+                                    frag_i_coords_d_Pwj = frag_i_coords_d_Pwj(keep,:);
+
+                                    %coords      = round(frag_i_coords_d_Pwj);
+                                    %idx         = sub2ind(frag_j_size, coords(:,1), coords(:,2));
+                                    %im_tmp      = zeros(frag_j_size);
+                                    %im_tmp(idx) = 1;
+                                    %figure, imshow(im_tmp,[]);
+                                    %return;
+                                    %-------------------------
+
+                                    lambda2 = lambda;
+                                    mu2     = -0.9;
+                                    frag_i_intensities  = get_intensities(im_frag_i_gray_ext, frag_i_coords_d_Pwi, interpolation_type);
+                                    frag_j_intensities  = get_intensities(im_frag_j_gray_ext, frag_i_coords_d_Pwj, interpolation_type);
+                                    E_sf                = eval_E_sf(frag_i_intensities, frag_j_intensities, size(frag_i_intensities,1), nb_channels, lambda2, mu2);
+ 
+                                    %disp(sprintf('card=%d', size(frag_i_intensities,1)));
+                                    if size(frag_i_intensities,1)>500 % TODO: CHANGE BY E_sf>0
+                                        if i<j
+                                            %figure, imshow(im_tmp,[]);
+                                            %figure, imshow(im_frag_j_gray_ext,[]);
+                                            toto = abs(double(im_tmp)-double(im_frag_j_gray_ext));
+                                            imwrite(toto, 'im_')
+                                            %figure, imshow(toto,[]);
+                                            %disp(sprintf('i=%d vs j=%d | E_sf=%f', i, j, E_sf));
+                                            all_E_sf = [all_E_sf,E_sf];
+                                        end
+                                        frags_sol{i}.E_sf = [frags_sol{i}.E_sf,E_sf];
+                                        frags_sol{i}.N_sf = [frags_sol{i}.N_sf,j];
+                                       Exk                = Exk + beta_sf*E_sf;
+                                    end
                                 end
                             end
                         end
@@ -234,6 +273,9 @@ function [Exk,frags_sol] = eval_E( im_fresco_gray, im_fresco_alpha, frags_infos,
             end
         end
     end
+
+    %disp(sprintf('#E_sf>0 = %d', numel(find(all_E_sf>0))));
+    %disp(sprintf('#E_sf<0 = %d', numel(find(all_E_sf<0))));
 
     % We gather all neighboring indexes in the same array for convenience
     for i=1:numel(frags_sol)
@@ -300,6 +342,7 @@ function [E_no,min_dist] = eval_E_no( frags_infos, frag_j, frag_i_coords_e_Pwj, 
 end
 
 % This function returns the value of the pairwise term E_sf
-function E_sf = eval_E_sf( frag_i_intensities, frag_j_intensities )
-    E_sf = sum((frag_i_intensities(:)-frag_j_intensities(:)).^2);
+function E_sf = eval_E_sf( frag_i_intensities, frag_j_intensities, area, nb_channels, lambda, mu )
+    E_sf = sum((frag_i_intensities(:)-frag_j_intensities(:)).^2) / (area * nb_channels);
+    E_sf = psi_x(2*E_sf-1, lambda, mu);
 end

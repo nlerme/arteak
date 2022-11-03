@@ -18,7 +18,7 @@ function run_reconstructions()
         seed             = 1; % Seed used for pseudo random number generator (0=random, >0=fixed seed for reproductibility)
         results_root_dir = ['..' filesep '..' filesep 'results' filesep 'tests'];
         data_root_dir    = ['..' filesep '..' filesep 'data' filesep 'regular'];
-        degradation_rate = 40; % degradation level of the fresco image (in {0,...,100})
+        degradation_rate = 0; % degradation level of the fresco image (in {0,...,100})
         %------------------------------------------------------------------
 
         % We add required paths recursively
@@ -57,7 +57,7 @@ function run_reconstructions()
         %config_name = [fresco_name '_2019-2-19_15.31.33'];
 
         fresco_name = 'PierodellaFrancesca_Resurrezione_730x826';
-        config_name = [fresco_name '_183_0_0_0'];
+        config_name = [fresco_name '_109_0_0_0'];
         %config_name = [fresco_name '_2019-2-28_13.55.54'];
         %config_name = [fresco_name '_2019-2-28_13.56.15'];
         %config_name = [fresco_name '_2019-2-28_13.56.3'];
@@ -106,9 +106,9 @@ function run_reconstructions()
         % General parameters
         verbose                   = true;       % Enables/disables verbose mode (true or false)
         show_figures              = false;      % Enables/disables display of figures (true or false)
-        recompute_preprocessing   = false;       % Boolean indicating if preprocessing step is recomputed or loaded (true or false)
+        recompute_preprocessing   = true;       % Boolean indicating if preprocessing step is recomputed or loaded (true or false)
         save_intermediate_results = true;       % Enables/disables saving of intermediate results (true or false)
-        save_ground_truth_results = true;      % Enables/disables saving of ground truth results (true or false)
+        save_ground_truth_results = true;       % Enables/disables saving of ground truth results (true or false)
         interpolation_type        = 'bilinear'; % Type of interpolation used for geometrical transform of fragments (non empty string)
         translation_tolerance     = 10.0;       % Tolerance in translation in pixels (>=0)
         angle_tolerance           = 5.0;        % Tolerance in rotation in degrees (in [0,360])
@@ -164,14 +164,14 @@ function run_reconstructions()
         outside_fragment_tolerance  = 5;     % Tolerance parameter controlling if a fragment is outside fresco model or not (in pixels, >=0)
         fragments_overlap_tolerance = 5;     % Tolerance parameter controlling if two fragments overlap or not (in pixels, >=0)
         beta_d                      = 1.0;   % Weighting parameter for the term E_d (>=0.0)
-        beta_a                      = 0.0;  % Weighting parameter for the term E_a (>=0.0)
+        beta_a                      = 0.0;   % Weighting parameter for the term E_a (>=0.0)
         beta_inc                    = 100.0; % Weighting parameter for the term E_{inc} (>=0.0)
         beta_c                      = 100.0; % Weighting parameter for the term E_c (>=0.0)
         beta_no                     = 100.0; % Weighting parameter for the term E_{no} (>=0.0)
-        beta_sf                     = 1.0;   % Weighting parameter for the term E_{sf} (>=0.0)
+        beta_sf                     = 1.0;  % Weighting parameter for the term E_{sf} (>=0.0)
         lambda                      = 20.0;  % Slope parameter of psi function (>0)
         mu                          = -0.99; % Shift parameter of psi function (in [-1,1])
-        nb_iterations               = 500;     % Number of iterations of MPP algorithm (>=1)
+        nb_iterations               = 1;  % Number of iterations of MPP algorithm (>=1)
 
         mpp_parameters = {struct('name', 'recompute_mpp', 'value', recompute_mpp), ...
                           struct('name', 'outside_fragment_tolerance', 'value', outside_fragment_tolerance), ...
