@@ -116,6 +116,8 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
                 im_tmp(frag_idx) = 0;
                 im_frag_color_ext(:,:,c) = im_tmp;
             end
+            imwrite(im_frag_color_ext, sprintf('im_frag_ext_%04d.png', k));
+            %imwrite(im_frag_color, sprintf('im_frag_%04d.png', k));
 
             % We compute gradients of grayscale extrapolated fragment image
             [im_frag_gray_ext_grad_x,im_frag_gray_ext_grad_y] = imgradientxy(im_frag_gray_ext, 'sobel');
@@ -290,6 +292,8 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
 
         % Starting timer
         ttt = tic;
+        load(mpp_data_fn, 'mpp_frags_sol');
+        init_frags_sol = mpp_frags_sol;
 
 %         if sum(im_fresco_alpha(:))==0
 %             % We deal with the case where the fresco image is unavailable
@@ -302,7 +306,7 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
 %         end
 
         % The initialization is taken as randomly selected fragments
-        init_frags_sol = run_init_blind_reconstruction(im_fresco_color, im_fresco_alpha, final_frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
+        %init_frags_sol = run_init_blind_reconstruction(im_fresco_color, im_fresco_alpha, final_frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
 
         % Stopping timer
         init_time = toc(ttt);
@@ -338,17 +342,17 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             imwrite(im_init_rec_bnd, [results_dir filesep 'init_rec_bnd.png']);
             imwrite(im_init_rec_color, [results_dir filesep 'init_rec_color.png']);
 
-            %fh = show_reconstructed_fresco(im_init_rec_color, init_frags_sol, tp, fp, tn, fn, ina, false, false, false, false, true, show_figures);
-            %fn = [results_dir filesep 'init_rec_color_n.png'];
-            %saveas(fh, fn);
-            %system(sprintf('mogrify -trim %s', fn));
-            %close(fh);
+            fh = show_reconstructed_fresco(im_init_rec_color, init_frags_sol, tp, fp, tn, fn, ina, false, false, false, false, true, show_figures);
+            fn = [results_dir filesep 'init_rec_color_n.png'];
+            saveas(fh, fn);
+            system(sprintf('mogrify -trim %s', fn));
+            close(fh);
 
-            %fh = show_reconstructed_fresco(im_init_rec_bnd, init_frags_sol, tp, fp, tn, fn, ina, false, false, false, false, true, show_figures);
-            %%fn = [results_dir filesep 'init_rec_bnd_n.png'];
-            %saveas(fh, fn);
-            %system(sprintf('mogrify -trim %s', fn));
-            %close(fh);
+            fh = show_reconstructed_fresco(im_init_rec_bnd, init_frags_sol, tp, fp, tn, fn, ina, false, false, false, false, true, show_figures);
+            fn = [results_dir filesep 'init_rec_bnd_n.png'];
+            saveas(fh, fn);
+            system(sprintf('mogrify -trim %s', fn));
+            close(fh);
 
             % MAT file
             save(init_data_fn, 'init_frags_sol', 'init_time', '-v7.3');
@@ -421,7 +425,7 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             %close(fh);
 
             % MAT file
-            save(mpp_data_fn, 'mpp_frags_sol', 'mpp_time', '-v7.3');
+            %save(mpp_data_fn, 'mpp_frags_sol', 'mpp_time', '-v7.3');
         end
     else
         % We load results

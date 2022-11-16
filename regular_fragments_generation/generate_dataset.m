@@ -23,7 +23,7 @@ function generate_dataset()
         end
 
         % Parameters
-        seed                     = 1;                                                      % Seed used for pseudo random number generator (0=random, >0=fixed seed for reproductibility)
+        seed                     = 1;                                                      % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
         verbose                  = false;                                                  % Enables/disables display of messages on command window
         fragments_sizes          = {[0.1,0.1],[0.15,0.15]};                                % Fragment sizes {[sy,sx]}_{i=1}^n in percentage of the smallest size of the fresco image (in ]0,1[)
         grayscale_conversion     = false;                                                  % Enables/disables grayscale conversion of both fresco and fragment images (true or false)
@@ -42,7 +42,11 @@ function generate_dataset()
 
         % We set the seed for pseudo random number generation. simdTwister algorithm is used for 
         % reproductibility (same sequence of random numbers will be obtained on different machines)
-        rng(seed, 'simdTwister');
+        if seed<0
+            rng('shuffle', 'simdTwister');
+        else
+            rng(seed, 'simdTwister');
+        end
 
         % We create output directory if needed
         if purge_dataset && isfolder(output_frescoes_dir)

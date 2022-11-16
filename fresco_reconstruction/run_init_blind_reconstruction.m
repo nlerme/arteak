@@ -125,8 +125,6 @@ function frags_sol = run_init_blind_reconstruction( im_fresco_color, im_fresco_a
                 frags_sol          = [frags_sol,{frag}];
                 frags_counter(idx) = frags_counter(idx)+1;
             end
-
-            nb_attempts = nb_attempts+1;
         end
     end
 

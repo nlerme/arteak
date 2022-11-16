@@ -9,17 +9,16 @@
 %   * B:  linearized image intensities
 function B = linearize_intensities( im_src, im_mask, nb_bins_per_channel )
     nb_channels = size(im_src,3);
-    A = floor((double(im_src)*(nb_bins_per_channel-1))/255.0);
-    B = A(:,:,1);
-    if ~isempty(im_mask)
-        B = B(im_mask>0);
-    end
+    A           = floor((double(im_src)*(nb_bins_per_channel-1))/255.0);
+    B           = A(:,:,1);
+
     for k=2:nb_channels
-        C = A(:,:,k);
-        if ~isempty(im_mask)
-            C = C(im_mask>0);
-        end
-        B = B+C*nb_bins_per_channel^(k-1);
+        B = B+A(:,:,k)*nb_bins_per_channel^(k-1);
     end
+
     B = B+1;
+
+    if ~isempty(im_mask)
+        B(im_mask==0) = -1;
+    end
 end

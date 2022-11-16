@@ -1,4 +1,6 @@
-% This function try to place a fragment in a fresco.
+% This function try to place a fragment in a fresco satisfying the two following constraints:
+%  (i) Each fragment must be mostly inside fresco (see parameter outside_fragment_tolerance)
+%  (ii) Each couple of fragments must do not overlap too much (see parameter fragments_overlap_tolerance)
 % 
 % Inputs:
 %   * frags_infos:                  information about fragment (cell array)
@@ -64,13 +66,14 @@ function frag = place_fragment( frags_infos, idx, translation, angle, frags_sol,
     fresco_intensities_t   = double(get_intensities(im_fresco_color, fresco_coords_t, interpolation_type));
     %-----------------------
     % Intensities taken into account only in the non masked areas of the fresco model (TODO ?)
-    %offsets                = sub2ind(fresco_size, fresco_coords_t(:,1), fresco_coords_t(:,2));
-    %idx_offsets            = find(im_fresco_alpha(offsets)>0);
-    %frag_intensities_m_t   = frag_intensities_t(idx_offsets,:);
-    %fresco_intensities_m_t = fresco_intensities_t(idx_offsets,:);
+    offsets                 = sub2ind(fresco_size, fresco_coords_t(:,1), fresco_coords_t(:,2));
+    idx_offsets             = find(im_fresco_alpha(offsets)>0);
+    nm_frag_intensities_t   = frag_intensities_t(idx_offsets,:);
+    nm_fresco_intensities_t = fresco_intensities_t(idx_offsets,:);
     %-----------------------
     frag                   = struct('idx', idx, 'translation', translation, 'angle', angle, 'area', frag_area_t, 'inner_circle_center', ic_center_t, ...
                                     'inner_circle_radius', ic_radius_t, 'outer_circle_center', oc_center_t, 'outer_circle_radius', oc_radius_t, ...
                                     'fresco_coords', fresco_coords_t, 'frag_coords', frag_coords_t, 'frag_intensities', frag_intensities_t, ...
-                                    'fresco_intensities', fresco_intensities_t, 'neighbors', [], 'color_idx', []);
+                                    'nm_frag_intensities', nm_frag_intensities_t, 'fresco_intensities', fresco_intensities_t, ...
+                                    'nm_fresco_intensities', nm_fresco_intensities_t, 'neighbors', [], 'color_idx', []);
 end

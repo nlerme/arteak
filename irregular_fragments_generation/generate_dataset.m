@@ -23,7 +23,7 @@ function generate_dataset()
         end
 
         % Parameters
-        seed                     = 1;                                                      % Seed used for pseudo random number generator (0=random, >0=fixed seed for reproductibility)
+        seed                     = 1;                                                      % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
         verbose                  = false;                                                  % Enables/disables display of messages on command window
         fresco_degradation_rates = 0.0:0.1:1.0;                                            % Percentages of degradation of the fresco image (in [0,1])
         root_frescoes_dir        = ['..' filesep '..' filesep 'data' filesep 'irregular']; % Input/output frescoes directory (string)
@@ -34,7 +34,11 @@ function generate_dataset()
 
         % We set the seed for pseudo random number generation. simdTwister algorithm is used for 
         % reproductibility (same sequence of random numbers will be obtained on different machines)
-        rng(seed, 'simdTwister');
+        if seed<0
+            rng('shuffle', 'simdTwister');
+        else
+            rng(seed, 'simdTwister');
+        end
 
         % We loop over fresco directories
         frescoes_dirs = get_matching_dirs(root_frescoes_dir, '.*');

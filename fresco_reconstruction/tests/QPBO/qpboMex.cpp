@@ -101,7 +101,7 @@ void mexFunction(int nlhs, mxArray *plhs[],
 	//Solve
 	g -> Solve();
 	g -> ComputeWeakPersistencies();
-    //for( int i=0; i<100; i++ )
+    for( int i=0; i<100; i++ )
         g -> Improve();
 
 	//output lower bound value

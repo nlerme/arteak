@@ -15,7 +15,8 @@
 % 
 % Outputs:
 %   * frags_sol:   output set of fragments (cell array)
-function frags_sol = adjust_fragments_position( im_fresco_gray, im_fresco_alpha, im_fresco_grads, frags_infos, frags_sol, general_parameters, mpp_parameters, gen_parameters, geometric_constraints )
+%   * energy:      value of the functional (real number)
+function [frags_sol,energy] = adjust_fragments_position( im_fresco_gray, im_fresco_alpha, im_fresco_grads, frags_infos, frags_sol, general_parameters, mpp_parameters, gen_parameters, geometric_constraints )
     % We set parameters
     interpolation_type      = get_parameter_value(general_parameters, 'interpolation_type');
     verbose                 = get_parameter_value(general_parameters, 'verbose');
@@ -56,6 +57,8 @@ function frags_sol = adjust_fragments_position( im_fresco_gray, im_fresco_alpha,
     %    msg(sprintf('    + E%d=(%f,%f,%f)', i, xk_new(i,1), xk_new(i,2), xk_new(i,3)), verbose);
     %end
 
+    energy = Exk_new;
+
     % If both locations and orientations are constrained, we do not apply local adjustment of fragments
     if ~isempty(geometric_constraints.locations) && ~isempty(geometric_constraints.orientations)
         return;
@@ -86,6 +89,7 @@ function [Exk,frags_sol] = eval_E( im_fresco_gray, im_fresco_alpha, frags_infos,
     Exk         = 0.0;
 
     all_E_sf = [];
+    all_E_d  = [];
 
     for i=1:numel(frags_sol)
         % We get information about the ith fragment
@@ -130,10 +134,20 @@ function [Exk,frags_sol] = eval_E( im_fresco_gray, im_fresco_alpha, frags_infos,
             if ~isempty(keep)
                 frag_i_coords_P        = frag_i_coords_P(keep,:);
                 frag_i_coords_Pwi      = frag_i_coords(keep,:);
-                frag_i_intensities_P   = get_intensities(im_fresco_gray, frag_i_coords_P, interpolation_type);
-                frag_i_intensities_Pwi = get_intensities(im_frag_i_gray, frag_i_coords_Pwi, interpolation_type);
-                frags_sol{i}.E_d       = eval_E_d(frag_i_intensities_P, frag_i_intensities_Pwi, frag_i_area, nb_channels, lambda, mu);
-                Exk                    = Exk + beta_d*frags_sol{i}.E_d;
+                frag_i_intensities2_P  = get_intensities(im_fresco_alpha, frag_i_coords_P, interpolation_type);
+
+                if sum(frag_i_intensities2_P)>0
+                    frag_i_intensities_P   = get_intensities(im_fresco_gray, frag_i_coords_P, interpolation_type);
+                    frag_i_intensities_Pwi = get_intensities(im_frag_i_gray, frag_i_coords_Pwi, interpolation_type);
+                    frag_i_intensities_P   = frag_i_intensities_P(frag_i_intensities2_P>0);
+                    frag_i_intensities_Pwi = frag_i_intensities_Pwi(frag_i_intensities2_P>0);
+                    frags_sol{i}.E_d       = eval_E_d(frag_i_intensities_P, frag_i_intensities_Pwi, frag_i_area, nb_channels, lambda, mu);
+                else
+                    frags_sol{i}.E_d = eps;
+                end
+
+                Exk     = Exk + beta_d*frags_sol{i}.E_d;
+                all_E_d = [all_E_d,frags_sol{i}.E_d];
             end
         end
 
@@ -244,12 +258,12 @@ function [Exk,frags_sol] = eval_E( im_fresco_gray, im_fresco_alpha, frags_infos,
                                     %return;
                                     %-------------------------
 
-                                    lambda2 = lambda;
-                                    mu2     = -0.9;
+                                    lambda2 = 20.0;
+                                    mu2     = -0.92;
                                     frag_i_intensities  = get_intensities(frags_infos{frag_i.idx}.color_ext, frag_i_coords_d_Pwi, interpolation_type);
                                     frag_j_intensities  = get_intensities(frags_infos{frag_j.idx}.color_ext, frag_i_coords_d_Pwj, interpolation_type);
-                                    E_sf                = eval_E_sf(frag_i_intensities, frag_j_intensities, size(frag_i_intensities,1), nb_channels, lambda2, mu2);
- 
+                                    E_sf                = eval_E_sf(frag_i_intensities, frag_j_intensities, size(frag_i_intensities,1), 3, lambda2, mu2);
+
                                     %disp(sprintf('card=%d', size(frag_i_intensities,1)));
                                     if size(frag_i_intensities,1)>500 % TODO: CHANGE BY E_sf>0
                                         if i<j
@@ -274,10 +288,15 @@ function [Exk,frags_sol] = eval_E( im_fresco_gray, im_fresco_alpha, frags_infos,
         end
     end
 
-    disp(sprintf('#E_sf>0     = %d', numel(find(all_E_sf>0))));
-    disp(sprintf('#E_sf<0     = %d', numel(find(all_E_sf<0))));
-    disp(sprintf('mean E_sf   = %f', mean(all_E_sf<0)));
-    disp(sprintf('median E_sf = %f', median(all_E_sf<0)));
+%     disp(sprintf('#E_d>0      = %d', sum(all_E_d>0)));
+%     disp(sprintf('#E_d<0      = %d', sum(all_E_d<0)));
+%     disp(sprintf('mean(E_d>0) = %f', mean(all_E_d(all_E_d>0))));
+%     disp(sprintf('mean(E_d<0) = %f', mean(all_E_d(all_E_d<0))));
+
+%     disp(sprintf('#E_sf>0      = %d', sum(all_E_sf>0)));
+%     disp(sprintf('#E_sf<0      = %d', sum(all_E_sf<0)));
+%     disp(sprintf('mean(E_sf>0) = %f', mean(all_E_sf(all_E_sf>0))));
+%     disp(sprintf('mean(E_sf<0) = %f', mean(all_E_sf(all_E_sf<0))));
 
     % We gather all neighboring indexes in the same array for convenience
     for i=1:numel(frags_sol)
@@ -346,5 +365,6 @@ end
 % This function returns the value of the pairwise term E_sf
 function E_sf = eval_E_sf( frag_i_intensities, frag_j_intensities, area, nb_channels, lambda, mu )
     E_sf = sum((frag_i_intensities(:)-frag_j_intensities(:)).^2) / (area * nb_channels);
+    %E_sf = median((frag_i_intensities(:)-frag_j_intensities(:)).^2);
     E_sf = psi_x(2*E_sf-1, lambda, mu);
 end

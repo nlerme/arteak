@@ -17,11 +17,11 @@
 %   * best_frags_sol:  resulting solution composed of fragments (cell array)
 function best_frags_sol = run_mpp_reconstruction( im_fresco_color, im_fresco_alpha, init_frags_sol, frags_infos, general_parameters, init_parameters, mpp_parameters, gen_parameters, geometric_constraints, frags_gt )
     % We convert the fresco image to normalized grayscale intensities to speed up
-    im_fresco_alpha2 = uint8(im_fresco_alpha>0);
+    %im_fresco_alpha2 = uint8(im_fresco_alpha>0);
 
-    for k=1:size(im_fresco_color,3)
-        im_fresco_color(:,:,k) = im_fresco_color(:,:,k).*im_fresco_alpha2;
-    end
+    %for k=1:size(im_fresco_color,3)
+    %    im_fresco_color(:,:,k) = im_fresco_color(:,:,k).*im_fresco_alpha2;
+    %end
 
     im_fresco_gray = im2double(rgb2gray(im_fresco_color));
 
@@ -42,16 +42,29 @@ function best_frags_sol = run_mpp_reconstruction( im_fresco_color, im_fresco_alp
     % We alternate sampling and selection steps for a number of iterations
     all_energies      = zeros(1,nb_iterations);
     nb_detections     = zeros(1,nb_iterations);
-    current_frags_sol = frags_gt;
+    current_frags_sol = init_frags_sol;
+    %aaa = zeros(1, numel(frags_infos));
 
     for it=1:nb_iterations
         % We get a new sample of fragments randomly selected
         %new_frags_sol = run_init_blind_reconstruction(im_fresco_color, im_fresco_alpha, frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
+        %translation_tolerance = get_parameter_value(general_parameters, 'translation_tolerance');
+        %angle_tolerance = get_parameter_value(general_parameters, 'angle_tolerance');
+        %[tp,~,~,~,~,~,~,~,~] = compare_solution_to_gt(new_frags_sol, frags_gt, numel(frags_infos), translation_tolerance, angle_tolerance);
+        %disp(sprintf('it=%d', it));
+        %aaa(tp) = aaa(tp)+1;
+        %if numel(find(aaa)>0)==numel(frags_infos)
+        %    aaa
+        %    break;
+        %end
+        %continue;
+        %new_frags_sol = frags_gt;
         %new_frags_sol = init_frags_sol;
-        new_frags_sol = {};
+        new_frags_sol = frags_gt{randi(numel(frags_gt))};
+        %new_frags_sol = {};
 
         % Gradient-based fragments placement
-        all_frags_sol     = adjust_fragments_position(im_fresco_gray, im_fresco_alpha, im_fresco_grads, frags_infos, [current_frags_sol,new_frags_sol], general_parameters, mpp_parameters, gen_parameters, geometric_constraints);
+        [all_frags_sol,E] = adjust_fragments_position(im_fresco_gray, im_fresco_alpha, im_fresco_grads, frags_infos, [current_frags_sol,new_frags_sol], general_parameters, mpp_parameters, gen_parameters, geometric_constraints);
         current_frags_sol = all_frags_sol(1:numel(current_frags_sol));
         new_frags_sol     = all_frags_sol(numel(current_frags_sol) + (1:numel(new_frags_sol)));
 

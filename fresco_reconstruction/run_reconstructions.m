@@ -14,11 +14,11 @@ function run_reconstructions()
         close all;
         clc;
 
-        %------------------------------------------------------------------
-        seed             = 1; % Seed used for pseudo random number generator (0=random, >0=fixed seed for reproductibility)
+        % -----------------------------------------------------------------
+        seed             = 1; % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
         results_root_dir = ['..' filesep '..' filesep 'results' filesep 'tests'];
         data_root_dir    = ['..' filesep '..' filesep 'data' filesep 'regular'];
-        degradation_rate = 0; % degradation level of the fresco image (in {0,...,100})
+        degradation_rate = 80; % degradation level of the fresco image (in {0,...,100})
         %------------------------------------------------------------------
 
         % We add required paths recursively
@@ -34,7 +34,11 @@ function run_reconstructions()
         % We set the seed for pseudo random number generation. simdTwister 
         % algorithm is used for reproductibility (same sequence of random 
         % numbers will be obtained on different machines)
-        rng(seed, 'simdTwister');
+        if seed<0
+            rng('shuffle', 'simdTwister');
+        else
+            rng(seed, 'simdTwister');
+        end
 
         %------------------------------------------------------------------
 
@@ -58,6 +62,7 @@ function run_reconstructions()
 
         fresco_name = 'PierodellaFrancesca_Resurrezione_730x826';
         config_name = [fresco_name '_109_0_0_0'];
+        %config_name = [fresco_name '_109_0_0_2'];
         %config_name = [fresco_name '_2019-2-28_13.55.54'];
         %config_name = [fresco_name '_2019-2-28_13.56.15'];
         %config_name = [fresco_name '_2019-2-28_13.56.3'];
@@ -99,14 +104,14 @@ function run_reconstructions()
         frags_dir     = [config_dir filesep 'frag_eroded'];
         geo_csts_fn   = [frags_dir filesep 'geometric_constraints.txt'];
         gen_params_fn = [frags_dir filesep 'gen_parameters.txt'];
-        results_dir   = [results_root_dir filesep fresco_name filesep config_name];
+        results_dir   = [results_root_dir filesep fresco_name filesep config_name '_' num2str(degradation_rate)];
 
         %------------------------------------------------------------------
 
         % General parameters
         verbose                   = true;       % Enables/disables verbose mode (true or false)
         show_figures              = false;      % Enables/disables display of figures (true or false)
-        recompute_preprocessing   = true;       % Boolean indicating if preprocessing step is recomputed or loaded (true or false)
+        recompute_preprocessing   = false;      % Boolean indicating if preprocessing step is recomputed or loaded (true or false)
         save_intermediate_results = true;       % Enables/disables saving of intermediate results (true or false)
         save_ground_truth_results = true;       % Enables/disables saving of ground truth results (true or false)
         interpolation_type        = 'bilinear'; % Type of interpolation used for geometrical transform of fragments (non empty string)
@@ -127,7 +132,7 @@ function run_reconstructions()
                               struct('name', 'background_color', 'value', background_color)};
 
         % Initialization parameters
-        recompute_init                     = true;    % Boolean indicating if initialization step is recomputed or loaded (true or false)
+        recompute_init                     = true;   % Boolean indicating if initialization step is recomputed or loaded (true or false)
         outside_fragment_tolerance         = 0.1;     % Tolerance threshold deciding if a fragment is outside fresco model or not (in [0,1])
         fragments_overlap_tolerance        = 0.1;     % Tolerance threshold deciding if two fragments overlap or not (in [0,1])
         features_detection_threshold1      = 0.01;    % First threshold for detecting features both in fresco and fragments (>=0)
@@ -165,13 +170,13 @@ function run_reconstructions()
         fragments_overlap_tolerance = 5;     % Tolerance parameter controlling if two fragments overlap or not (in pixels, >=0)
         beta_d                      = 1.0;   % Weighting parameter for the term E_d (>=0.0)
         beta_a                      = 0.0;   % Weighting parameter for the term E_a (>=0.0)
-        beta_inc                    = 100.0; % Weighting parameter for the term E_{inc} (>=0.0)
-        beta_c                      = 100.0; % Weighting parameter for the term E_c (>=0.0)
-        beta_no                     = 100.0; % Weighting parameter for the term E_{no} (>=0.0)
+        beta_inc                    = 1000.0; % Weighting parameter for the term E_{inc} (>=0.0)
+        beta_c                      = 1000.0; % Weighting parameter for the term E_c (>=0.0)
+        beta_no                     = 1000.0; % Weighting parameter for the term E_{no} (>=0.0)
         beta_sf                     = 1.0;  % Weighting parameter for the term E_{sf} (>=0.0)
         lambda                      = 20.0;  % Slope parameter of psi function (>0)
-        mu                          = -0.99; % Shift parameter of psi function (in [-1,1])
-        nb_iterations               = 1;  % Number of iterations of MPP algorithm (>=1)
+        mu                          = -0.995; % Shift parameter of psi function (in [-1,1])
+        nb_iterations               = 2000;  % Number of iterations of MPP algorithm (>=1)
 
         mpp_parameters = {struct('name', 'recompute_mpp', 'value', recompute_mpp), ...
                           struct('name', 'outside_fragment_tolerance', 'value', outside_fragment_tolerance), ...

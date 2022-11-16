@@ -15,11 +15,11 @@
 %   * frags_sol:  solution composed of fragments (cell array)
 function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fresco_alpha, frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt, verbose )
     % We erase the content of the color image according to the alpha channel
-    im_fresco_alpha2 = uint8(im_fresco_alpha>0);
+    %im_fresco_alpha2 = uint8(im_fresco_alpha>0);
 
-    for k=1:size(im_fresco_color,3)
-        im_fresco_color(:,:,k) = im_fresco_color(:,:,k).*im_fresco_alpha2;
-    end
+    %for k=1:size(im_fresco_color,3)
+    %    im_fresco_color(:,:,k) = im_fresco_color(:,:,k).*im_fresco_alpha2;
+    %end
 
     % We initialize variables
     interpolation_type          = get_parameter_value(general_parameters, 'interpolation_type');
@@ -37,60 +37,88 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
         % If both locations and orientations are constrained to a finite 
         % subset, we perform exhaustive search
         %------------------------------------------------------------------
-        % We compute all costs (#rotations x #fragments x #locations) as L2
-        % norm between each fragment and the fresco model
-        sizes = [numel(frags_infos),numel(geometric_constraints.orientations),size(geometric_constraints.locations,1)];
-        costs = -ones(1,prod(sizes));
-        used  = zeros(1,prod(sizes),'logical');
-        frags = cell(1,prod(sizes));
+        % We compute and stores all costs (#rotations x #fragments x #locations) as L2
+        % norm between each fragment and the fresco model (only non-masked areas are 
+        % taken into account) without regards to overlapping and non inclusion constraints.
+        sizes         = [numel(frags_infos),numel(geometric_constraints.orientations),size(geometric_constraints.locations,1)];
+        used          = zeros(1,numel(frags_infos),'logical');
+        costs         = -ones(1,prod(sizes));
+        nm_areas_size = cell(1,prod(sizes));
 
         parfor l=1:numel(costs)
-            [i,j,k]     = ind2sub(sizes,l);
+            [i,j,k]     = ind2sub(sizes, l);
             angle       = -geometric_constraints.orientations(j);
             translation = flip(geometric_constraints.locations(k,:));
             frag        = place_fragment(frags_infos, i, translation, angle, {}, im_fresco_color, im_fresco_alpha, interpolation_type, outside_fragment_tolerance, fragments_overlap_tolerance);
 
             if ~isempty(frag)
-                costs(l) = sum(sum((frag.fresco_intensities-frag.frag_intensities).^2));
-                frags{l} = frag;
+                nm_areas_size{l} = [nm_areas_size{l},numel(frag.nm_fresco_intensities)];
+
+                if numel(frag.nm_fresco_intensities)>0
+                    costs(l) = sum((frag.nm_fresco_intensities(:)-frag.nm_frag_intensities(:)).^2) / numel(frag.fresco_intensities);
+                else
+                    costs(l) = 0;
+                end
             end
         end
 
-        % For each location, we select the rotated fragment with the
-        % cheapest cost that does not intersect with already placed ones
-        order      = randperm(sizes(3));
+        nm_areas_size2 = cell(1,size(geometric_constraints.locations,1));
+
+        for l=1:numel(costs)
+            [~,~,k]           = ind2sub(sizes, l);
+            nm_areas_size2{k} = [nm_areas_size2{k},nm_areas_size{l}];
+        end
+
+        mean_nm_areas_size = zeros(1,numel(nm_areas_size2));
+
+        for k=1:numel(mean_nm_areas_size)
+            mean_nm_areas_size(k) = mean(nm_areas_size2{k});
+        end
+
+        % We sort locations in descending order of their mean non-masked 
+        % areas. Then, for each location considered in that order, we select 
+        % the rotated fragment with the cheapest cost that does not intersect 
+        % with already placed ones and is not part of the reconstruction yet.
+        [~,order]  = sort(mean_nm_areas_size, 'descend');
         cover_rate = 0.0;
 
         for k=order
-            best_cost = realmax;
-            best_idx  = [];
-
-            for i=1:sizes(1)
-                for j=1:sizes(2)
-                    idx = sub2ind(sizes, i, j, k);
-
-                    if costs(idx)>=0 && used(idx)==0 && costs(idx)<best_cost
-                        angle       = -geometric_constraints.orientations(j);
-                        translation = flip(geometric_constraints.locations(k,:));
-                        frag        = place_fragment(frags_infos, i, translation, angle, frags_sol, im_fresco_color, im_fresco_alpha, interpolation_type, outside_fragment_tolerance, fragments_overlap_tolerance);
-
-                        if ~isempty(frag)
-                            best_cost = costs(idx);
-                            best_idx  = idx;
+            if isnan(mean_nm_areas_size(k))
+                continue;
+            else
+                best_cost = realmax;
+                best_l    = [];
+                best_frag = {};
+    
+                for i=find(~used)
+                    for j=1:sizes(2)
+                        l = sub2ind(sizes, i, j, k);
+    
+                        if costs(l)>=0 && costs(l)<best_cost
+                            angle       = -geometric_constraints.orientations(j);
+                            translation = flip(geometric_constraints.locations(k,:));
+                            frag        = place_fragment(frags_infos, i, translation, angle, frags_sol, im_fresco_color, im_fresco_alpha, interpolation_type, outside_fragment_tolerance, fragments_overlap_tolerance);
+    
+                            if ~isempty(frag)
+                                best_cost = costs(l);
+                                best_l    = l;
+                                best_frag = frag;
+                            end
                         end
                     end
                 end
-            end
-
-            if numel(best_idx)>0
-                cover_rate     = cover_rate + (frag.area / fresco_nb_pixels);
-                best_frag      = frags{best_idx};
-                frags_sol      = [frags_sol,{best_frag}];
-                used(best_idx) = 1;
-            end
-
-            if cover_rate>=max_cover_rate
-                break;
+    
+                if ~isempty(best_l)>0
+                    [best_i,~,~]  = ind2sub(sizes, best_l);
+                    cover_rate    = cover_rate + (best_frag.area/fresco_nb_pixels);
+                    frags_sol     = [frags_sol,{best_frag}];
+                    used(best_i)  = 1;
+                    %disp(sprintf('frag idx=%d (%d) added | new_cover_rate=%f | sigma(used)=%d', frags{best_l}.idx, best_i, cover_rate, sum(used)));
+                end
+    
+                if cover_rate>=max_cover_rate
+                    break;
+                end
             end
         end
     elseif isempty(geometric_constraints.locations) && isempty(geometric_constraints.orientations)
@@ -117,7 +145,7 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
 
         % We compute normalized histogram of fresco image
         msg('    + computing fresco histogram', verbose);
-        [fresco_hist,fresco_hist_idx] = get_histogram(im_fresco_color, [], color_matching_nb_bins_per_channel);
+        [fresco_hist,fresco_hist_idx] = get_histogram(im_fresco_color.*uint8(im_fresco_alpha>0), [], color_matching_nb_bins_per_channel);
         fresco_hist_n = (fresco_hist / sum(fresco_hist));
 
         % For each fragment, we search regions sharing the same color
@@ -210,7 +238,7 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
         % We detect and extract features on fresco
         msg('    + detection/extraction of fresco features', verbose);
 
-        im_fresco_mask2 = padarray(ones(fresco_size, 'logical'), [features_matching_fresco_padding,features_matching_fresco_padding], 'both');
+        im_fresco_mask2 = padarray(im_fresco_alpha>0, [features_matching_fresco_padding,features_matching_fresco_padding], 'both');
         im_fresco_gray2 = padarray(im_fresco_gray, [features_matching_fresco_padding,features_matching_fresco_padding], 'both', 'symmetric');
 
         fresco_points                    = detectFASTFeatures(im_fresco_gray2, 'MinContrast', features_detection_threshold1, 'MinQuality', features_detection_threshold2);
@@ -225,19 +253,19 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
         for k=1:numel(results)
             %msg(sprintf('      + fragment %d', k), verbose);
 
-            % We convert fragment to grayscale
+            % We convert fragment image to grayscale levels
             frag_info    = frags_infos{k};
             im_frag_gray = rgb2gray(frag_info.color);
 
-            % We get extrapolated fragment image
-            im_frag_alpha = frag_info.alpha;
-            im_frag_gray  = frag_info.gray_ext;
+            % We slightly erode fragment and do color extrapolation
+            im_frag_alpha = imerode(frag_info.alpha, strel('disk', 1, 0));
+            im_frag_gray2 = extend_image_borders(im_frag_alpha, im_frag_gray);
 
-            % We detect features and only keep those lying in fragment
-            frag_points = detectFASTFeatures(im_frag_gray, 'MinContrast', features_detection_threshold1, 'MinQuality', features_detection_threshold2);
+            % We detect features
+            frag_points = detectFASTFeatures(im_frag_gray2, 'MinContrast', features_detection_threshold1, 'MinQuality', features_detection_threshold2);
 
             % We extract features
-            [frag_features,frag_points2] = extractFeatures(im_frag_gray, frag_points, 'method', features_extraction_method);
+            [frag_features,frag_points2] = extractFeatures(im_frag_gray2, frag_points, 'method', features_extraction_method);
 
             % We filter both keypoints and features
             [frag_points2_f,frag_features_f] = filter_keypoints_and_features(im_frag_alpha, frag_points2, frag_features);
@@ -355,11 +383,11 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
                 no_intersections = 1;
 
                 for i=1:numel(frags_sol)
-                    fresco_coords_t2 = frags_sol{i}.fresco_coords;
-                    oc_center_t2     = frags_sol{i}.outer_circle_center;
-                    oc_radius_t2     = frags_sol{i}.outer_circle_radius;
+                    fresco_coords2 = frags_sol{i}.fresco_coords;
+                    oc_center2     = frags_sol{i}.outer_circle_center;
+                    oc_radius2     = frags_sol{i}.outer_circle_radius;
 
-                    if are_fragments_intersected(fresco_coords_t, oc_center_t, oc_radius_t, fresco_coords_t2, oc_center_t2, oc_radius_t2, fragments_overlap_tolerance)
+                    if are_fragments_intersected(fresco_coords_t, oc_center_t, oc_radius_t, fresco_coords2, oc_center2, oc_radius2, fragments_overlap_tolerance)
                         no_intersections = 0;
                         break;
                     end
@@ -448,7 +476,7 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
         % If orientations are not constrained but locations are, we perform
         % gradient descent. (TODO)
         %------------------------------------------------------------------
-        disp('error: this part of the software doises not implemented yet');
+        disp('error: this part of the software is not implemented yet');
         frags_sol = {};
     end
 

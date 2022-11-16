@@ -12,5 +12,6 @@ function [h,B] = get_histogram( im_src, im_mask, nb_bins_per_channel )
     B = linearize_intensities(im_src, im_mask, nb_bins_per_channel);
     nb_channels = size(im_src,3);
     total_nb_bins = nb_bins_per_channel^nb_channels;
-    h = accumarray(B(:), 1, [total_nb_bins 1]);
+    C = B(B>=0);
+    h = accumarray(C(:), 1, [total_nb_bins 1]);
 end

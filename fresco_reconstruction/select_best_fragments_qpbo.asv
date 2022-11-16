@@ -67,7 +67,7 @@ function [best_frags_sol,energy] = select_best_fragments_qpbo( current_frags_sol
                 idx1 = find(all_frags_sol{i}.N_c==j);
                 idx2 = find(all_frags_sol{j}.N_c==i);
 
-                if ~isempty(idx)
+                if ~isempty(idx1) && ~isempty(idx2)
                     ok   = true;
                     cost = cost + beta_c*0.5*(all_frags_sol{i}.E_c(idx1)+all_frags_sol{i}.E_c(idx2));
                     %disp('uniqueness................');
@@ -89,48 +89,47 @@ function [best_frags_sol,energy] = select_best_fragments_qpbo( current_frags_sol
                 idx1 = find(all_frags_sol{i}.N_sf==j);
                 idx2 = find(all_frags_sol{j}.N_sf==i);
 
-%                 if ~isempty(idx1) && ~isempty(idx2)
-%                     ok   = true;
-%                     cost = cost + beta_sf*0.5*(all_frags_sol{i}.E_sf(idx1)+all_frags_sol{j}.E_sf(idx2));
-%                 end
-
                 if ~isempty(idx1) && ~isempty(idx2)
-                    ii = find(cellfun(@(x) x.idx==all_frags_sol{i}.idx, frags_gt));
-    
-                    if ~isempty(ii)
-                        neighbors = frags_gt(frags_gt{ii}.neighbors);
-                        jj        = find(cellfun(@(x) x.idx==all_frags_sol{j}.idx, neighbors));
-        
-                        if ~isempty(jj)
-                            i_angle        = all_frags_sol{i}.angle;
-                            i_translation  = all_frags_sol{i}.translation;
-                            j_angle        = all_frags_sol{j}.angle;
-                            j_translation  = all_frags_sol{j}.translation;
-                            ii_angle       = frags_gt{ii}.angle;
-                            ii_translation = frags_gt{ii}.translation;
-                            jj_angle       = neighbors{jj}.angle;
-                            jj_translation = neighbors{jj}.translation;
-        
-                            if i_angle~=ii_angle || ...
-                               j_angle~=jj_angle || ...
-                               (j_translation(1)-i_translation(1))~=(jj_translation(1)-ii_translation(1)) || ...
-                               (j_translation(2)-i_translation(2))~=(jj_translation(2)-ii_translation(2))
-                                % Penality
-                                ok   = true;
-                                cost = cost + beta_sf*1.0;
-                            else
-                                % Reward
-                                disp(sprintf('forward'))
-                                ok   = true;
-                                cost = cost - beta_sf*1.0;
-                            end
-                        else
-                            % Penality
-                            ok   = true;
-                            cost = cost + beta_sf*1.0;
-                        end
-                    end
+                    ok   = true;
+                    cost = cost + beta_sf*0.5*(all_frags_sol{i}.E_sf(idx1)+all_frags_sol{j}.E_sf(idx2));
                 end
+
+%                 if ~isempty(idx1) && ~isempty(idx2)
+%                     ii = find(cellfun(@(x) x.idx==all_frags_sol{i}.idx, frags_gt));
+%     
+%                     if ~isempty(ii)
+%                         neighbors = frags_gt(frags_gt{ii}.neighbors);
+%                         jj        = find(cellfun(@(x) x.idx==all_frags_sol{j}.idx, neighbors));
+%         
+%                         if ~isempty(jj)
+%                             i_angle        = all_frags_sol{i}.angle;
+%                             i_translation  = all_frags_sol{i}.translation;
+%                             j_angle        = all_frags_sol{j}.angle;
+%                             j_translation  = all_frags_sol{j}.translation;
+%                             ii_angle       = frags_gt{ii}.angle;
+%                             ii_translation = frags_gt{ii}.translation;
+%                             jj_angle       = neighbors{jj}.angle;
+%                             jj_translation = neighbors{jj}.translation;
+%         
+%                             if i_angle~=ii_angle || ...
+%                                j_angle~=jj_angle || ...
+%                                (j_translation(1)-i_translation(1))~=(jj_translation(1)-ii_translation(1)) || ...
+%                                (j_translation(2)-i_translation(2))~=(jj_translation(2)-ii_translation(2))
+%                                 % Penality
+%                                 ok   = true;
+%                                 cost = cost + beta_sf*1.0;
+%                             else
+%                                 % Reward
+%                                 ok   = true;
+%                                 cost = cost - beta_sf*1.0;
+%                             end
+%                         else
+%                             % Penality
+%                             ok   = true;
+%                             cost = cost + beta_sf*1.0;
+%                         end
+%                     end
+%                 end
             end
 
             if ok

@@ -100,7 +100,7 @@ function [best_frags_sol,energy] = select_best_fragments_qpbo( current_frags_sol
                     if ~isempty(ii)
                         neighbors = frags_gt(frags_gt{ii}.neighbors);
                         jj        = find(cellfun(@(x) x.idx==all_frags_sol{j}.idx, neighbors));
-        
+
                         if ~isempty(jj)
                             i_angle        = all_frags_sol{i}.angle;
                             i_translation  = all_frags_sol{i}.translation;
