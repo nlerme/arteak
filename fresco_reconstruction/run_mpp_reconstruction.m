@@ -3,7 +3,7 @@
 % 
 % Inputs:
 %   * im_fresco_color:        color image of fresco (non empty uint8 matrix)
-%   * im_fresco_alpha:        alpha image of fresco (non empty uint8 matrix)
+%   * im_fresco_alpha:        alpha image of fresco (non empty logical matrix)
 %   * init_frags_sol:         initialization composed of fragments ([non empty] cell array)
 %   * frags_infos:            collection of fragments (cell array with RGBA images)
 %   * general_parameters:     value of general parameters (non empty cell array)
@@ -16,23 +16,17 @@
 % Outputs:
 %   * best_frags_sol:  resulting solution composed of fragments (cell array)
 function best_frags_sol = run_mpp_reconstruction( im_fresco_color, im_fresco_alpha, init_frags_sol, frags_infos, general_parameters, init_parameters, mpp_parameters, gen_parameters, geometric_constraints, frags_gt )
-    % We convert the fresco image to normalized grayscale intensities to speed up
-    %im_fresco_alpha2 = uint8(im_fresco_alpha>0);
+    % We normalize intensities of both  the fresco image and the fragment images
+    im_fresco_color = im2double(rgb2gray(im_fresco_color));
 
-    %for k=1:size(im_fresco_color,3)
-    %    im_fresco_color(:,:,k) = im_fresco_color(:,:,k).*im_fresco_alpha2;
+    %for k=1:numel(frags_infos)
+    %    frags_infos{k}.color = im2double(frags_infos{k}.gray);
     %end
 
-    im_fresco_gray = im2double(rgb2gray(im_fresco_color));
-
-    % We normalize intensities of fragment images
-    for k=1:numel(frags_infos)
-        frags_infos{k}.gray = im2double(frags_infos{k}.gray);
-    end
-
     % We compute gradients of fresco image
-    [im_fresco_grad_x,im_fresco_grad_y] = imgradientxy(im_fresco_gray, 'sobel');
-    im_fresco_grads                     = cat(3, im_fresco_grad_x, im_fresco_grad_y);
+    im_fresco_grads = [];
+    %[im_fresco_grad_x,im_fresco_grad_y] = imgradientxy(im_fresco_gray, 'sobel');
+    %im_fresco_grads                     = cat(3, im_fresco_grad_x, im_fresco_grad_y);
 
     % We initialize variables
     verbose        = get_parameter_value(general_parameters, 'verbose');
@@ -42,7 +36,7 @@ function best_frags_sol = run_mpp_reconstruction( im_fresco_color, im_fresco_alp
     % We alternate sampling and selection steps for a number of iterations
     all_energies      = zeros(1,nb_iterations);
     nb_detections     = zeros(1,nb_iterations);
-    current_frags_sol = init_frags_sol;
+    current_frags_sol = frags_gt;
     %aaa = zeros(1, numel(frags_infos));
 
     for it=1:nb_iterations
@@ -58,13 +52,13 @@ function best_frags_sol = run_mpp_reconstruction( im_fresco_color, im_fresco_alp
         %    break;
         %end
         %continue;
-        %new_frags_sol = frags_gt;
         %new_frags_sol = init_frags_sol;
-        new_frags_sol = frags_gt{randi(numel(frags_gt))};
-        %new_frags_sol = {};
+        %new_frags_sol = frags_gt;
+        %new_frags_sol = frags_gt{randi(numel(frags_gt))};
+        new_frags_sol = {};
 
         % Gradient-based fragments placement
-        [all_frags_sol,E] = adjust_fragments_position(im_fresco_gray, im_fresco_alpha, im_fresco_grads, frags_infos, [current_frags_sol,new_frags_sol], general_parameters, mpp_parameters, gen_parameters, geometric_constraints);
+        [all_frags_sol,E] = adjust_fragments_position(im_fresco_color, im_fresco_alpha, im_fresco_grads, frags_infos, [current_frags_sol,new_frags_sol], general_parameters, mpp_parameters, gen_parameters, geometric_constraints);
         current_frags_sol = all_frags_sol(1:numel(current_frags_sol));
         new_frags_sol     = all_frags_sol(numel(current_frags_sol) + (1:numel(new_frags_sol)));
 

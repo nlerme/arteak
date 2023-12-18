@@ -152,20 +152,22 @@ function arteak_measurements( fh_main )
 
     function [frags_cover_rate,frags_size,frags_contrast] = compute_measurements()
         % We get information about selected solution
-        frag_sol    = g_mydata.frags_sols{g_mydata.current_recs_idx};
-        im_rec_gray = g_mydata.im_recs_gray{g_mydata.current_recs_idx}(:,:,1:end-1);
+        frag_sol      = g_mydata.frags_sols{g_mydata.current_recs_idx};
+        im_rec_filled = g_mydata.im_recs_filled{g_mydata.current_recs_idx};
 
         % We get cover rate of fragments
         frags_cover_rate = zeros(1,numel(frag_sol));
+
         for k=1:numel(frag_sol)
-            frags_cover_rate(k) = sum(sum(im_rec_gray==k))/prod(size(im_rec_gray))*100.0;
+            im_tmp              = (im_rec_filled==k);
+            frags_cover_rate(k) = sum(im_tmp(:))/numel(im_rec_filled)*100.0;
         end
 
         % We compute statistics on size of fragments
-        frags_size = cellfun(@(x) 2*x.outer_circle_radius, frag_sol)
+        frags_size = cellfun(@(x) 2*x.outer_circle_radius, frag_sol);
 
         % We compute statistics on contrast of fragments
-        frags_contrast = cellfun(@(x) x.std, frag_sol)
+        frags_contrast = cellfun(@(x) x.std, frag_sol);
     end
 
     %----------------------------------------------------------------------

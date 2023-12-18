@@ -1,5 +1,5 @@
 % This function opens a subwindow and deal with fresco reconstruction
-function [g_new_frags_sol,g_new_im_rec_color,g_new_im_rec_filled,g_rec_name] = arteak_reconstruction( fh_main )
+function [g_new_frags_sol,g_new_im_rec_color,g_new_im_rec_alpha,g_new_im_rec_filled,g_rec_name] = arteak_reconstruction( fh_main )
     % We get GUI data
     g_mydata = guidata(fh_main);
 
@@ -12,6 +12,7 @@ function [g_new_frags_sol,g_new_im_rec_color,g_new_im_rec_filled,g_rec_name] = a
     % We make as empty returned variables
     g_new_frags_sol     = {};
     g_new_im_rec_color  = [];
+    g_new_im_rec_alpha  = [];
     g_new_im_rec_filled = [];
     g_rec_name          = '';
 
@@ -267,16 +268,14 @@ function [g_new_frags_sol,g_new_im_rec_color,g_new_im_rec_filled,g_rec_name] = a
         end
 
         % We run the reconstruction algorithm to recover a collection of fragments
-        g_new_frags_sol = run_reconstruction_from_loaded_data(g_mydata.im_fresco(:,:,1:3), g_mydata.frags_infos, g_general_parameters, g_init_parameters, ...
-                                                              g_mpp_parameters, g_mydata.gen_parameters, g_mydata.geometric_constraints);
-        
+        g_new_frags_sol = run_reconstruction_from_loaded_data(g_mydata.im_fresco_color, g_mydata.im_fresco_alpha, g_mydata.frags_infos, g_general_parameters, ...
+                                                              g_init_parameters, g_mpp_parameters, g_mydata.gen_parameters, g_mydata.geometric_constraints);
+
         % We get the reconstructed frescoes
         interpolation_type                         = get_parameter_value(g_general_parameters, 'interpolation_type');
         background_color                           = get_parameter_value(g_general_parameters, 'background_color');
-        [g_new_im_rec_filled,~,g_new_im_rec_color] = get_reconstructed_fresco(g_mydata.im_fresco, g_mydata.frags_infos, g_new_frags_sol, interpolation_type, background_color);
-        g_new_im_rec_filled                        = cat(3, g_new_im_rec_filled, g_mydata.im_fresco(:,:,4));
-        g_new_im_rec_color                         = cat(3, g_new_im_rec_color, g_mydata.im_fresco(:,:,4));
-        imwrite(g_new_im_rec_color(:,:,1:3), [results_dir filesep 'final_rec_color.png'], 'Alpha', g_new_im_rec_color(:,:,4));
+        [g_new_im_rec_filled,~,g_new_im_rec_color] = get_reconstructed_fresco(g_mydata.im_fresco_color, g_mydata.frags_infos, g_new_frags_sol, interpolation_type, background_color);
+        imwrite(g_new_im_rec_color, [results_dir filesep 'final_rec_color.png'], 'Alpha', g_new_im_rec_alpha);
 
         % We save the reconstructed fresco image and fragments
         save_registered_fragments_list(g_new_frags_sol, frags_infos, [results_dir filesep g_mydata.true_frags_fn]);

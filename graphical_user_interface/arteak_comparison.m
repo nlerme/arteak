@@ -4,7 +4,7 @@ function arteak_comparison( fh_main )
     g_mydata = guidata(fh_main);
 
     % We check if all inputs are available
-    if numel(g_mydata.im_recs_color)<2
+    if numel(g_mydata.im_recs_color)<2 || numel(g_mydata.im_recs_alpha)<2
         uiwait(errordlg('At least two reconstructed frescoes must be previsously loaded', 'ARTEAK ERROR', 'modal'));
         return;
     end
@@ -407,14 +407,14 @@ function arteak_comparison( fh_main )
     %-------------------------------- Misc. -------------------------------
     %----------------------------------------------------------------------
 
-    function update_view( tp, fp, tn, fn, te, re, ina, im_rec )
+    function update_view( tp, fp, tn, fn, te, re, ina, im_rec_color, im_rec_alpha )
         figure(g_fh_cmp);
 
-        if isempty(im_rec)
+        if isempty(im_rec_color) || isempty(im_rec_alpha)
             cla(g_axes);
         end
 
-        image(g_axes, im_rec(:,:,1:end-1), 'AlphaData', im_rec(:,:,end));
+        image(g_axes, im_rec_color, 'AlphaData', im_rec_alpha);
         set(g_axes, 'visible', 'off');
         set(g_axes, 'color', 'none');
         axis image;
@@ -518,7 +518,7 @@ function arteak_comparison( fh_main )
         set(g_h_re_label2, 'string', sprintf('%.2f+/-%.2f', mean(re(2,:)), std(re(2,:))));
 
         % We update the image view
-        update_view(tp, fp, tn, fn, te, re, ina, g_mydata.im_recs_color{g_current_rec_idx});
+        update_view(tp, fp, tn, fn, te, re, ina, g_mydata.im_recs_color{g_current_rec_idx}, g_mydata.im_recs_alpha{g_current_rec_idx});
     end
 
     function translation_tolerance_callback( h_object, event_data )

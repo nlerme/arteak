@@ -3,7 +3,7 @@
 % 
 % Inputs:
 %   * im_fresco_color:        color image of fresco (non empty uint8 matrix)
-%   * im_fresco_alpha:        alpha image of fresco (non empty uint8 matrix)
+%   * im_fresco_alpha:        alpha image of fresco (non empty logical matrix)
 %   * frags_infos:            collection of fragments (cell array with RGBA images)
 %   * general_parameters:     value of general parameters (non empty cell array)
 %   * init_parameters:        value of init parameters (non empty cell array)
@@ -14,13 +14,6 @@
 % Outputs:
 %   * frags_sol:  solution composed of fragments (cell array)
 function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fresco_alpha, frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt, verbose )
-    % We erase the content of the color image according to the alpha channel
-    %im_fresco_alpha2 = uint8(im_fresco_alpha>0);
-
-    %for k=1:size(im_fresco_color,3)
-    %    im_fresco_color(:,:,k) = im_fresco_color(:,:,k).*im_fresco_alpha2;
-    %end
-
     % We initialize variables
     interpolation_type          = get_parameter_value(general_parameters, 'interpolation_type');
     verbose                     = get_parameter_value(general_parameters, 'verbose');
@@ -40,10 +33,17 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
         % We compute and stores all costs (#rotations x #fragments x #locations) as L2
         % norm between each fragment and the fresco model (only non-masked areas are 
         % taken into account) without regards to overlapping and non inclusion constraints.
-        sizes         = [numel(frags_infos),numel(geometric_constraints.orientations),size(geometric_constraints.locations,1)];
-        used          = zeros(1,numel(frags_infos),'logical');
-        costs         = -ones(1,prod(sizes));
-        nm_areas_size = cell(1,prod(sizes));
+        sizes          = [numel(frags_infos),numel(geometric_constraints.orientations),size(geometric_constraints.locations,1)];
+        used           = zeros(1,numel(frags_infos),'logical');
+        costs          = -ones(1,prod(sizes));
+        nm_areas_size  = cell(1,prod(sizes));
+
+        %----------------------
+        %fresco_name   = 'signorelli_71';
+        %erosion_level = 2;
+        %save_all_ed_terms(im_fresco_color, im_fresco_alpha, frags_infos, general_parameters, init_parameters, geometric_constraints, frags_gt, fresco_name, erosion_level);
+        %save_all_esf_terms(frags_infos, general_parameters, init_parameters, geometric_constraints, frags_gt, fresco_name, erosion_level);
+        %----------------------
 
         parfor l=1:numel(costs)
             [i,j,k]     = ind2sub(sizes, l);
@@ -55,7 +55,11 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
                 nm_areas_size{l} = [nm_areas_size{l},numel(frag.nm_fresco_intensities)];
 
                 if numel(frag.nm_fresco_intensities)>0
+                    % cost between 0 and 1
                     costs(l) = sum((frag.nm_fresco_intensities(:)-frag.nm_frag_intensities(:)).^2) / numel(frag.fresco_intensities);
+                    %costs(l) = 1-ssim(frag.nm_fresco_intensities(:), frag.nm_frag_intensities(:));
+                    %tmp = corrcoef(frag.nm_fresco_intensities(:), frag.nm_frag_intensities(:));
+                    %costs(l) = 1-(tmp(1,2)+1)*0.5;
                 else
                     costs(l) = 0;
                 end
@@ -89,7 +93,7 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
                 best_cost = realmax;
                 best_l    = [];
                 best_frag = {};
-    
+
                 for i=find(~used)
                     for j=1:sizes(2)
                         l = sub2ind(sizes, i, j, k);
@@ -107,7 +111,7 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
                         end
                     end
                 end
-    
+
                 if ~isempty(best_l)>0
                     [best_i,~,~]  = ind2sub(sizes, best_l);
                     cover_rate    = cover_rate + (best_frag.area/fresco_nb_pixels);
@@ -115,7 +119,7 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
                     used(best_i)  = 1;
                     %disp(sprintf('frag idx=%d (%d) added | new_cover_rate=%f | sigma(used)=%d', frags{best_l}.idx, best_i, cover_rate, sum(used)));
                 end
-    
+
                 if cover_rate>=max_cover_rate
                     break;
                 end
@@ -485,4 +489,179 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
         frags_sol{k}.fresco_coords = [];
         frags_sol{k}.frag_coords   = [];
     end
+end
+
+function save_all_ed_terms( im_fresco_color, im_fresco_alpha, frags_infos, general_parameters, init_parameters, geometric_constraints, frags_gt, fresco_name, erosion_level )
+    % We normalize intensities of fragment and fresco images
+    im_fresco_color = im2double(im_fresco_color);
+
+    for k=1:numel(frags_infos)
+        frags_infos{k}.color = im2double(frags_infos{k}.color);
+    end
+
+    % We get the value of some parameters
+    translation_tolerance       = get_parameter_value(general_parameters, 'translation_tolerance');
+    angle_tolerance             = get_parameter_value(general_parameters, 'angle_tolerance');
+    outside_fragment_tolerance  = get_parameter_value(init_parameters, 'outside_fragment_tolerance');
+    fragments_overlap_tolerance = get_parameter_value(init_parameters, 'fragments_overlap_tolerance');
+    interpolation_type          = get_parameter_value(general_parameters, 'interpolation_type');
+    verbose                     = get_parameter_value(general_parameters, 'verbose');
+    sizes                       = [numel(frags_infos),numel(geometric_constraints.orientations),size(geometric_constraints.locations,1)];
+
+    % We loop over all acceptable configurations
+    %ttt = tic;
+    msg('[ computing all acceptable E_d terms ]', verbose);
+
+    frag_intensities_tf   = {}; % true fragment
+    fresco_intensities_tf = {}; % true fragment
+    frag_intensities_ff   = {}; % false fragment
+    fresco_intensities_ff = {}; % false fragment
+
+    parfor l=1:prod(sizes)
+        [i,j,k]     = ind2sub(sizes, l);
+        angle       = -geometric_constraints.orientations(j);
+        translation = flip(geometric_constraints.locations(k,:));
+        frag        = place_fragment(frags_infos, i, translation, angle, {}, im_fresco_color, im_fresco_alpha, interpolation_type, outside_fragment_tolerance, fragments_overlap_tolerance);
+
+        if ~isempty(frag) && numel(frag.nm_frag_intensities)>0 && numel(frag.nm_fresco_intensities)>0
+            [tp,~,~,~,~,~,~,~,~] = compare_solution_to_gt({frag}, frags_gt, numel(frags_infos), translation_tolerance, angle_tolerance);
+
+            if ~isempty(tp)
+                frag_intensities_tf   = [frag_intensities_tf,{frag.nm_frag_intensities}];
+                fresco_intensities_tf = [fresco_intensities_tf,{frag.nm_fresco_intensities}];
+            else
+                frag_intensities_ff   = [frag_intensities_ff,{frag.nm_frag_intensities}];
+                fresco_intensities_ff = [fresco_intensities_ff,{frag.nm_fresco_intensities}];
+            end
+        end
+    end
+
+    %numel(frag_intensities_tf)
+    %numel(fresco_intensities_tf)
+    %numel(frag_intensities_ff)
+    %numel(fresco_intensities_ff)
+    save(sprintf('new_results/%s_ed_%d.mat', fresco_name, erosion_level), '-v7.3', 'frag_intensities_tf', 'fresco_intensities_tf', 'frag_intensities_ff', 'fresco_intensities_ff');
+    %msg(sprintf('[ running time -> %f ]', toc(ttt)), verbose);
+end
+
+function save_all_esf_terms( frags_infos, general_parameters, init_parameters, geometric_constraints, frags_gt, fresco_name, erosion_level )
+    % We normalize intensities of fragment and fresco images
+    for k=1:numel(frags_infos)
+        frags_infos{k}.color = im2double(frags_infos{k}.color);
+    end
+
+    % We get the value of some parameters
+    translation_tolerance = get_parameter_value(general_parameters, 'translation_tolerance');
+    angle_tolerance       = get_parameter_value(general_parameters, 'angle_tolerance');
+    interpolation_type    = get_parameter_value(general_parameters, 'interpolation_type');
+    verbose               = get_parameter_value(general_parameters, 'verbose');
+    sizes                 = [numel(frags_infos),numel(geometric_constraints.orientations),size(geometric_constraints.locations,1)];
+
+    % We loop over all acceptable configurations
+    %ttt = tic;
+    msg('[ computing all acceptable E_sf terms ]', verbose);
+
+    frag_i_intensities_tn = {}; % true neighbors i
+    frag_j_intensities_tn = {}; % true neighbors j
+    frag_i_intensities_fn = {}; % false neighbors i
+    frag_j_intensities_fn = {}; % false neighbors j
+
+    for i=1:sizes(1)
+        ii                  = find(cellfun(@(x) x.idx==i, frags_gt));
+        frag_i_translation  = frags_gt{ii}.translation;
+        frag_i_size         = frags_infos{i}.size;
+        frag_i_center       = round(0.5*frag_i_size);
+        frag_i_coords_d     = frags_infos{i}.coords_d;
+        im_frag_i_color_ext = frags_infos{i}.color_ext;
+
+        for j=1:sizes(1)
+            if i==j
+                continue;
+            end
+
+            if numel(find(frags_gt{ii}.neighbors==j))>0
+                jj = frags_gt{ii}.neighbors(find(frags_gt{ii}.neighbors==j));
+            else
+                jj = frags_gt{ii}.neighbors(1);
+            end
+
+            frag_j_translation = frags_gt{jj}.translation;
+            frag_j_size        = frags_infos{j}.size;
+            frag_j_center      = round(0.5*frag_j_size);
+            im_frag_j_alpha_d  = frags_infos{j}.alpha_d;
+
+            for k=1:sizes(2)
+                for l=1:sizes(2)
+                    frag_i_angle        = -geometric_constraints.orientations(k);
+                    frag_j_angle        = -geometric_constraints.orientations(l);
+                    im_frag_j_color_ext = frags_infos{j}.color_ext;
+
+                    frag_i_coords_d_Pwj = apply_forward_backward_transforms(frag_i_coords_d, frag_i_translation, frag_i_angle, frag_i_center, frag_j_translation, frag_j_angle, frag_j_center);
+                    keep                = find(frag_i_coords_d_Pwj(:,1)>=1 & frag_i_coords_d_Pwj(:,1)<=frag_j_size(1) & frag_i_coords_d_Pwj(:,2)>=1 & frag_i_coords_d_Pwj(:,2)<=frag_j_size(2));
+                    frag_i_coords_d_Pwi = frag_i_coords_d(keep,:);
+                    frag_i_coords_d_Pwj = frag_i_coords_d_Pwj(keep,:);
+
+                    %++++++++++++++++++++++++++++++++++++++++++++++++++++++
+%                     if i==1 && j==8
+%                         coords      = round(frag_i_coords_d_Pwj);
+%                         idx         = sub2ind(frag_j_size, coords(:,1), coords(:,2));
+%                         im_tmp      = zeros(size(im_frag_j_color_ext));
+%                         intensities = get_intensities(im_frag_i_color_ext, frag_i_coords_d_Pwi, interpolation_type);
+%                         for c=1:size(im_frag_j_color_ext,3)
+%                             im_tmp2       = zeros(frag_j_size);
+%                             im_tmp2(idx)  = intensities(:,c);
+%                             im_tmp(:,:,c) = im_tmp2;
+%                         end
+%                         figure;
+%                         hold on;
+%                         subplot(1,3,1);
+%                         imshow(im_tmp,[]);
+%                         subplot(1,3,2);
+%                         imshow(im_frag_j_color_ext,[]);
+%                         subplot(1,3,3);
+%                         imshow(abs(im_frag_j_color_ext-im_tmp),[]);
+%                     end
+                    %++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+                    %--------------------
+
+                    coords              = round(frag_i_coords_d_Pwj);
+                    idx                 = sub2ind(frag_j_size, coords(:,1), coords(:,2));
+                    keep                = im_frag_j_alpha_d(idx)>0;
+                    frag_i_coords_d_Pwi = frag_i_coords_d_Pwi(keep,:);
+                    frag_i_coords_d_Pwj = frag_i_coords_d_Pwj(keep,:);
+
+                    %--------------------
+
+                    frag_i_intensities = get_intensities(im_frag_i_color_ext, frag_i_coords_d_Pwi, interpolation_type);
+                    frag_j_intensities = get_intensities(im_frag_j_color_ext, frag_i_coords_d_Pwj, interpolation_type);
+
+                    %--------------------
+
+                    frag_i               = struct('idx', i, 'translation', frag_i_translation, 'angle', frag_i_angle);
+                    frag_j               = struct('idx', j, 'translation', frag_j_translation, 'angle', frag_j_angle);
+                    [tp,~,~,~,~,~,~,~,~] = compare_solution_to_gt({frag_i,frag_j}, frags_gt, numel(frags_infos), translation_tolerance, angle_tolerance);
+
+                    % Two fragments are considered as true positives if 
+                    % they are neighbors in the ground truth and their relative
+                    % orientation match with each other, i.e. we do not
+                    % care about absolute positioning of fragments.
+                    if numel(tp)==2
+                        frag_i_intensities_tn = [frag_i_intensities_tn,{frag_i_intensities}];
+                        frag_j_intensities_tn = [frag_j_intensities_tn,{frag_j_intensities}];
+                    else
+                        frag_i_intensities_fn = [frag_i_intensities_fn,{frag_i_intensities}];
+                        frag_j_intensities_fn = [frag_j_intensities_fn,{frag_j_intensities}];
+                    end
+                end
+            end
+        end
+    end
+
+    %numel(frag_i_intensities_tn)
+    %numel(frag_j_intensities_tn)
+    %numel(frag_i_intensities_fn)
+    %numel(frag_j_intensities_fn)
+    save(sprintf('new_results/%s_esf_%d.mat', fresco_name, erosion_level), '-v7.3', 'frag_i_intensities_tn', 'frag_j_intensities_tn', 'frag_i_intensities_fn', 'frag_j_intensities_fn');
+    %msg(sprintf('[ running time -> %f ]', toc(ttt)), verbose);
 end

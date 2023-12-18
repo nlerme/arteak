@@ -8,12 +8,12 @@ function varargout = arteak_gui( varargin )
     addpath_recurse(['..' filesep 'common_tools']);
     addpath_recurse(['..' filesep 'fresco_reconstruction']);
 
-    % We define global variables
-    g_mydata.arteak_version           = 'v0.0.1 - 20/06/2022';
+    % We define global variables with their default value
+    g_mydata                          = struct();
+    g_mydata.arteak_version           = 'v0.0.1 - 23/11/2022';
     g_mydata.software_url             = 'https://nicolaslerme.fr/';
     g_mydata.datasets_url             = 'https://vision.unipv.it/DAFchallenge/DAFNE_dataset/dataset_download.html';
-    %g_mydata.data_root_dir           = ['..' filesep '..' filesep 'data' filesep 'regular_db1'];
-    g_mydata.data_root_dir            = '.';
+    g_mydata.data_root_dir            = ['..' filesep '..' filesep 'data' filesep 'irregular'];
     g_mydata.pics_dir                 = ['pics'];
     g_mydata.banner_fn                = [g_mydata.pics_dir filesep 'banner.png'];
     g_mydata.frags_dir                = 'frag_eroded';
@@ -27,12 +27,15 @@ function varargout = arteak_gui( varargin )
     g_mydata.current_fresco_dir       = [];
     g_mydata.current_frags_dir        = [];
     g_mydata.image_view               = [0.21 0.02 0.78 0.96];
-    g_mydata.im_current               = [];
+    g_mydata.im_current_color         = [];
+    g_mydata.im_current_alpha         = [];
     g_mydata.contrast                 = 1.0;
     g_mydata.luminosity               = 0.0;
-    g_mydata.im_fresco                = [];
+    g_mydata.im_fresco_color          = [];
+    g_mydata.im_fresco_alpha          = [];
     g_mydata.frags_infos              = {};
     g_mydata.im_recs_color            = {};
+    g_mydata.im_recs_alpha            = {};
     g_mydata.im_recs_filled           = {};
     g_mydata.frags_sols               = {};
     g_mydata.gen_parameters           = [];
@@ -58,6 +61,29 @@ function varargout = arteak_gui( varargin )
     g_mydata.recs_background_color    = g_mydata.colormap(2,:);
     g_mydata.interpolation_type       = 'bilinear';
 
+    % Names of a subset of the above variables to keep track accross runs of the software
+    g_mydata.session_vars_fn = 'session.mat';
+    g_mydata.session_vars    = {'data_root_dir', ...
+                                'use_fresco_alpha', ...
+                                'use_frags_alpha', ...
+                                'use_recs_alpha', ...
+                                'show_frags_inner_circle', ...
+                                'show_frags_outer_circle', ...
+                                'show_recs_idx', ...
+                                'show_recs_inner_circle', ...
+                                'show_recs_outer_circle', ...
+                                'show_recs_neighbors', ...
+                                'frags_inner_circle_color', ...
+                                'frags_outer_circle_color', ...
+                                'recs_neighbors_color', ...
+                                'recs_idx_color', ...
+                                'recs_inner_circle_color', ...
+                                'recs_outer_circle_color', ...
+                                'recs_background_color'};
+
+    % We load session variables (if present)
+    load_session_variables();
+
     % We display the banner for a small fraction of time
     fh_banner = figure('menubar', 'none', ...
                        'toolbar', 'none', ...
@@ -70,7 +96,7 @@ function varargout = arteak_gui( varargin )
         uiwait(errordlg(sprintf('Unable to load banner image %s', g_mydata.banner_fn), 'ARTEAK ERROR', 'modal'));
         return;
     end
-        
+
     imshow(im_banner,[]);
     movegui(fh_banner, 'center');
     pause(2.0);
@@ -639,24 +665,25 @@ function varargout = arteak_gui( varargin )
     %---------------------------- Non-callbacks ---------------------------
     %----------------------------------------------------------------------
 
+    % This function updates the current view
     function update_view( use_alpha_channel )
         % We keep track of current alpha value
         g_mydata.current_alpha = use_alpha_channel;
 
         % We first check if current image is available
-        if isempty(g_mydata.im_current)
+        if isempty(g_mydata.im_current_color) || isempty(g_mydata.im_current_alpha)
             return;
         end
 
         % If so, we compute a version of it with stretched image intensities
-        im_src = max(min(g_mydata.luminosity + g_mydata.contrast*im2double(g_mydata.im_current(:,:,1:end-1)),1),0);
+        im_src = max(min(g_mydata.luminosity + g_mydata.contrast*im2double(g_mydata.im_current_color),1),0);
 
         % We enable the figure
         figure(g_fh_main);
 
         % If alpha channel is present, we use it
         if use_alpha_channel
-            image(g_mydata.axes, im_src, 'AlphaData', g_mydata.im_current(:,:,end));
+            image(g_mydata.axes, im_src, 'AlphaData', uint8(255.0*g_mydata.im_current_alpha));
             set(g_mydata.axes, 'visible', 'off');
             set(g_mydata.axes, 'color', 'none');
             axis image;
@@ -686,9 +713,10 @@ function varargout = arteak_gui( varargin )
         axtoolbar(g_mydata.axes, {'zoomin','zoomout','restoreview','datacursor','pan','export'});
     end
 
+    % This function updates the current reconstruction
     function update_reconstruction()
         % We check if reconstructed frescoes are available
-        if numel(g_mydata.frags_sols)==0 || g_mydata.current_recs_idx<1 || g_mydata.current_recs_idx>numel(g_mydata.frags_sols)
+        if isempty(g_mydata.frags_sols) || g_mydata.current_recs_idx<1 || g_mydata.current_recs_idx>numel(g_mydata.frags_sols)
             return;
         end
 
@@ -750,6 +778,28 @@ function varargout = arteak_gui( varargin )
         hold off;
     end
 
+    % This function loads the variables of the previous session
+    function load_session_variables()
+        if ~isfile(g_mydata.session_vars_fn)
+            return;
+        end
+
+        % We load variables
+        r = load(g_mydata.session_vars_fn);
+
+        for k=1:numel(g_mydata.session_vars)
+            if isfield(r, g_mydata.session_vars{k})
+                value    = getfield(r, g_mydata.session_vars{k});
+                g_mydata = setfield(g_mydata, g_mydata.session_vars{k}, value);
+            end
+        end
+    end
+
+    % This function saves the variables of the current session
+    function save_session_variables()
+        save(g_mydata.session_vars_fn, '-struct', 'g_mydata');
+    end
+
     %----------------------------------------------------------------------
     %----------------------------- Callbacks ------------------------------
     %----------------------------------------------------------------------
@@ -759,7 +809,8 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % We update the current image view
-        g_mydata.im_current = g_mydata.im_fresco;
+        g_mydata.im_current_color = g_mydata.im_fresco_color;
+        g_mydata.im_current_alpha = g_mydata.im_fresco_alpha;
         update_view(g_mydata.use_fresco_alpha);
 
         % We save GUI data
@@ -788,11 +839,16 @@ function varargout = arteak_gui( varargin )
 
                 if isempty(im_fresco_alpha)
                     fs              = size(im_fresco_color);
-                    im_fresco_alpha = uint8(255*ones(fs(1:2)));
+                    im_fresco_alpha = ones(fs(1:2), 'logical');
+                else
+                    % We threshold alpha channel to limit memory usage
+                    im_fresco_alpha = (im_fresco_alpha>0);
                 end
 
-                g_mydata.im_current = cat(3, im_fresco_color, im_fresco_alpha);
-                g_mydata.im_fresco  = g_mydata.im_current;
+                g_mydata.im_current_color = im_fresco_color;
+                g_mydata.im_current_alpha = im_fresco_alpha;
+                g_mydata.im_fresco_color  = im_fresco_color;
+                g_mydata.im_fresco_alpha  = im_fresco_alpha;
                 set(g_h_fresco_filename_edit, 'string', full_filename);
                 update_view(g_mydata.use_fresco_alpha);
             end
@@ -807,10 +863,12 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % We unload the fresco image and make image view as empty
-        if ~isempty(g_mydata.im_fresco)
+        if ~isempty(g_mydata.im_fresco_color) && ~isempty(g_mydata.im_fresco_alpha)
             g_mydata.current_fresco_dir = [];
-            g_mydata.im_fresco          = [];
-            g_mydata.im_current         = [];
+            g_mydata.im_fresco_color    = [];
+            g_mydata.im_fresco_alpha    = [];
+            g_mydata.im_current_color   = [];
+            g_mydata.im_current_alpha   = [];
             delete(get(gca,'Children'));
             set(g_h_fresco_filename_edit, 'string', '');
             update_view(g_mydata.use_fresco_alpha);
@@ -827,8 +885,9 @@ function varargout = arteak_gui( varargin )
         % We enable/disable alpha channel and update the image view
         g_mydata.use_fresco_alpha = ~g_mydata.use_fresco_alpha;
 
-        if ~isempty(g_mydata.im_fresco)
-            g_mydata.im_current = g_mydata.im_fresco;
+        if ~isempty(g_mydata.im_fresco_color) && ~isempty(g_mydata.im_fresco_alpha)
+            g_mydata.im_current_color = g_mydata.im_fresco_color;
+            g_mydata.im_current_alpha = g_mydata.im_fresco_alpha;
             update_view(g_mydata.use_fresco_alpha);
         end
 
@@ -844,7 +903,8 @@ function varargout = arteak_gui( varargin )
         if ~isempty(g_mydata.frags_infos)
             g_mydata.current_frags_idx = get(h_object, 'value');
             frag_info                  = g_mydata.frags_infos{g_mydata.current_frags_idx};
-            g_mydata.im_current        = cat(3, frag_info.color, frag_info.alpha);
+            g_mydata.im_current_color  = frag_info.color;
+            g_mydata.im_current_alpha  = frag_info.alpha;
             update_view(g_mydata.use_frags_alpha);
         end
 
@@ -857,7 +917,7 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % We check if fresco image is available
-        if isempty(g_mydata.im_fresco)
+        if isempty(g_mydata.im_fresco_color) || isempty(g_mydata.im_fresco_alpha)
             uiwait(errordlg('Please load first a fresco image', 'ARTEAK ERROR', 'modal'));
             return;
         end
@@ -934,15 +994,20 @@ function varargout = arteak_gui( varargin )
             [im_frag_color,im_frag_alpha] = load_image(filenames{k}, false);
 
             if isempty(im_frag_color)
-                % If loading of fragment image fails, we display an error message
                 uiwait(errordlg(sprintf('Fragment image %s cannot be loaded', filenames{k}), 'ARTEAK ERROR', 'modal'));
             else
-                % Otherwise, we add it to the list of fragments
                 if isempty(im_frag_alpha)
                     fs            = size(im_frag_color);
-                    im_frag_alpha = uint8(255*ones(fs(1:2)));
+                    im_frag_alpha = ones(fs(1:2), 'logical');
+                else
+                    % We correct image intensities near fragment boundary based on alpha channel
+                    im_frag_color = correct_fragment_image_intensities(im_frag_color, im_frag_alpha);
+
+                    % We threshold alpha channel to limit memory usage
+                    im_frag_alpha = (im_frag_alpha>0);
                 end
 
+                % We compute inner and outer circles of fragment
                 [occ,ocr]   = get_outer_circle(im_frag_alpha, 200, false); % nb_iterations = 200
                 [icc,icr]   = get_inner_circle(im_frag_alpha, occ);
                 [rows,cols] = find(im_frag_alpha);
@@ -971,7 +1036,8 @@ function varargout = arteak_gui( varargin )
         if numel(g_mydata.frags_infos)>0
             g_mydata.current_frags_idx = numel(g_mydata.frags_infos);
             set(g_h_fragments_listbox, 'value', g_mydata.current_frags_idx);
-            g_mydata.im_current = cat(3, g_mydata.frags_infos{g_mydata.current_frags_idx}.color, g_mydata.frags_infos{g_mydata.current_frags_idx}.alpha);
+            g_mydata.im_current_color = g_mydata.frags_infos{g_mydata.current_frags_idx}.color;
+            g_mydata.im_current_alpha = g_mydata.frags_infos{g_mydata.current_frags_idx}.alpha;
             update_view(g_mydata.use_frags_alpha);
         end
 
@@ -984,7 +1050,7 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % If the list of fragments is not empty, we remove the current item from it
-        if numel(g_mydata.frags_infos)==0
+        if isempty(g_mydata.frags_infos)
             return;
         end
 
@@ -1006,10 +1072,11 @@ function varargout = arteak_gui( varargin )
         set(g_h_fragments_listbox, 'string', new_fns);
 
         % We set the current image as empty
-        g_mydata.im_current = [];
+        g_mydata.im_current_color = [];
+        g_mydata.im_current_alpha = [];
         delete(get(gca,'Children'));
 
-        if numel(g_mydata.frags_infos)>0
+        if ~isempty(g_mydata.frags_infos)
             g_mydata.current_frags_idx = 1;
         else
             g_mydata.current_frags_idx     = -1;
@@ -1030,14 +1097,15 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % If the list is not empty, we remove all fragment images
-        if numel(g_mydata.frags_infos)==0
+        if isempty(g_mydata.frags_infos)
             return;
         end
 
         g_mydata.frags_infos           = {};
         g_mydata.gen_parameters        = [];
         g_mydata.geometric_constraints = [];
-        g_mydata.im_current            = [];
+        g_mydata.im_current_color      = [];
+        g_mydata.im_current_alpha      = [];
         g_mydata.current_frags_idx     = -1;
         g_mydata.current_frags_dir     = [];
         set(g_h_fragments_listbox, 'string', {});
@@ -1053,7 +1121,7 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % If the list is not empty, we remove all fragment images
-        if numel(g_mydata.frags_infos)==0
+        if isempty(g_mydata.frags_infos)
             return;
         end
 
@@ -1081,7 +1149,7 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % If the list is not empty, we remove all fragment images
-        if numel(g_mydata.frags_infos)==0
+        if isempty(g_mydata.frags_infos)
             return;
         end
 
@@ -1112,8 +1180,9 @@ function varargout = arteak_gui( varargin )
         g_mydata.use_frags_alpha = ~g_mydata.use_frags_alpha;
 
         if ~isempty(g_mydata.frags_infos)
-            frag_info           = g_mydata.frags_infos{g_mydata.current_frags_idx};
-            g_mydata.im_current = cat(3, frag_info.color, frag_info.alpha);
+            frag_info                 = g_mydata.frags_infos{g_mydata.current_frags_idx};
+            g_mydata.im_current_color = frag_info.color;
+            g_mydata.im_current_alpha = frag_info.alpha;
             update_view(g_mydata.use_frags_alpha);
         end
 
@@ -1129,8 +1198,9 @@ function varargout = arteak_gui( varargin )
         g_mydata.show_frags_inner_circle = ~g_mydata.show_frags_inner_circle;
 
         if ~isempty(g_mydata.frags_infos)
-            frag_info           = g_mydata.frags_infos{g_mydata.current_frags_idx};
-            g_mydata.im_current = cat(3, frag_info.color, frag_info.alpha);
+            frag_info                 = g_mydata.frags_infos{g_mydata.current_frags_idx};
+            g_mydata.im_current_color = frag_info.color;
+            g_mydata.im_current_alpha = frag_info.alpha;
             update_view(g_mydata.use_frags_alpha);
         end
 
@@ -1146,8 +1216,9 @@ function varargout = arteak_gui( varargin )
         g_mydata.show_frags_outer_circle = ~g_mydata.show_frags_outer_circle;
 
         if ~isempty(g_mydata.frags_infos)
-            frag_info           = g_mydata.frags_infos{g_mydata.current_frags_idx};
-            g_mydata.im_current = cat(3, frag_info.color, frag_info.alpha);
+            frag_info                 = g_mydata.frags_infos{g_mydata.current_frags_idx};
+            g_mydata.im_current_color = frag_info.color;
+            g_mydata.im_current_alpha = frag_info.alpha;
             update_view(g_mydata.use_frags_alpha);
         end
 
@@ -1164,8 +1235,9 @@ function varargout = arteak_gui( varargin )
         set(h_object, 'backgroundcolor', g_mydata.frags_inner_circle_color);
 
         if ~isempty(g_mydata.frags_infos)
-            frag_info           = g_mydata.frags_infos{g_mydata.current_frags_idx};
-            g_mydata.im_current = cat(3, frag_info.color, frag_info.alpha);
+            frag_info                 = g_mydata.frags_infos{g_mydata.current_frags_idx};
+            g_mydata.im_current_color = frag_info.color;
+            g_mydata.im_current_alpha = frag_info.alpha;
             update_view(g_mydata.use_frags_alpha);
         end
 
@@ -1182,8 +1254,9 @@ function varargout = arteak_gui( varargin )
         set(h_object, 'backgroundcolor', g_mydata.frags_outer_circle_color);
 
         if ~isempty(g_mydata.frags_infos)
-            frag_info           = g_mydata.frags_infos{g_mydata.current_frags_idx};
-            g_mydata.im_current = cat(3, frag_info.color, frag_info.alpha);
+            frag_info                 = g_mydata.frags_infos{g_mydata.current_frags_idx};
+            g_mydata.im_current_color = frag_info.color;
+            g_mydata.im_current_alpha = frag_info.alpha;
             update_view(g_mydata.use_frags_alpha);
         end
 
@@ -1258,9 +1331,10 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % If the reconstructions list is not empty, we update view with the selected one
-        if ~isempty(g_mydata.im_recs_color)
+        if ~isempty(g_mydata.im_recs_color) && ~isempty(g_mydata.im_recs_alpha)
             g_mydata.current_recs_idx = get(h_object, 'value');
-            g_mydata.im_current       = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+            g_mydata.im_current_color = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+            g_mydata.im_current_alpha = g_mydata.im_recs_alpha{g_mydata.current_recs_idx};
             update_view(g_mydata.use_recs_alpha);
             update_reconstruction();
         end
@@ -1274,7 +1348,7 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % We check if fragment images are available
-        if isempty(g_mydata.im_fresco) || isempty(g_mydata.frags_infos)
+        if isempty(g_mydata.im_fresco_color) || isempty(g_mydata.frags_infos)
             uiwait(errordlg('Fresco and fragment images must be loaded before loading reconstructions', 'ARTEAK ERROR', 'modal'));
             return;
         end
@@ -1397,12 +1471,11 @@ function varargout = arteak_gui( varargin )
             end
 
             % We build the reconstructed fresco and add it to the list
-            [im_rec_gray,~,im_rec_color] = get_reconstructed_fresco(g_mydata.im_fresco(:,:,1:end-1), g_mydata.frags_infos, frags_sol, ...
+            [im_rec_gray,~,im_rec_color] = get_reconstructed_fresco(g_mydata.im_fresco_color, g_mydata.frags_infos, frags_sol, ...
                                                                     g_mydata.interpolation_type, g_mydata.recs_background_color);
-            im_tmp1                      = cat(3, im_rec_color, g_mydata.im_fresco(:,:,end));
-            im_tmp2                      = cat(3, im_rec_gray, g_mydata.im_fresco(:,:,end));
-            g_mydata.im_recs_color       = {g_mydata.im_recs_color{:},im_tmp1};
-            g_mydata.im_recs_filled      = {g_mydata.im_recs_filled{:},im_tmp2};
+            g_mydata.im_recs_color       = {g_mydata.im_recs_color{:},im_rec_color};
+            g_mydata.im_recs_alpha       = {g_mydata.im_recs_alpha{:},g_mydata.im_fresco_alpha};
+            g_mydata.im_recs_filled      = {g_mydata.im_recs_filled{:},im_rec_gray};
             g_mydata.frags_sols          = {g_mydata.frags_sols{:},frags_sol};
             set(g_h_reconstructions_listbox, 'string', {items{:},directories{k}});
 
@@ -1417,7 +1490,8 @@ function varargout = arteak_gui( varargin )
         if numel(g_mydata.frags_sols)>0
             g_mydata.current_recs_idx = numel(g_mydata.frags_sols);
             set(g_h_reconstructions_listbox, 'value', g_mydata.current_recs_idx);
-            g_mydata.im_current = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+            g_mydata.im_current_color = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+            g_mydata.im_current_alpha = g_mydata.im_recs_alpha{g_mydata.current_recs_idx};
             update_view(g_mydata.use_recs_alpha);
             update_reconstruction();
         end
@@ -1431,7 +1505,7 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % If the list of reconstructions is not empty, we remove the current item from it
-        if numel(g_mydata.im_recs_color)==0
+        if isempty(g_mydata.im_recs_color) || isempty(g_mydata.im_recs_alpha)
             return;
         end
 
@@ -1440,6 +1514,7 @@ function varargout = arteak_gui( varargin )
         new_frags_sols     = {};
         new_im_recs_filled = {};
         new_im_recs_color  = {};
+        new_im_recs_alpha  = {};
         new_dirs           = {};
         idx                = 1;
 
@@ -1447,6 +1522,7 @@ function varargout = arteak_gui( varargin )
             if k~=current_idx
                 new_frags_sols{idx}     = g_mydata.frags_sols{k};
                 new_im_recs_color{idx}  = g_mydata.im_recs_color{k};
+                new_im_recs_alpha{idx}  = g_mydata.im_recs_alpha{k};
                 new_im_recs_filled{idx} = g_mydata.im_recs_filled{k};
                 new_dirs{idx}           = current_dirs{k};
                 idx                     = idx + 1;
@@ -1455,14 +1531,16 @@ function varargout = arteak_gui( varargin )
 
         g_mydata.frags_sols     = new_frags_sols;
         g_mydata.im_recs_color  = new_im_recs_color;
+        g_mydata.im_recs_alpha  = new_im_recs_alpha;
         g_mydata.im_recs_filled = new_im_recs_filled;
         set(g_h_reconstructions_listbox, 'string', new_dirs);
 
         % We set the current image as empty
-        g_mydata.im_current = [];
+        g_mydata.im_current_color = [];
+        g_mydata.im_current_alpha = [];
         delete(get(gca,'Children'));
 
-        if numel(g_mydata.im_recs_color)>0
+        if ~isempty(g_mydata.im_recs_color) && ~isempty(g_mydata.im_recs_alpha)
             g_mydata.current_recs_idx = 1;
         else
             g_mydata.current_recs_idx = -1;
@@ -1481,14 +1559,16 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % If the list is not empty, we remove all reconstructions
-        if numel(g_mydata.im_recs_color)==0
+        if isempty(g_mydata.im_recs_color) || isempty(g_mydata.im_recs_alpha)
             return;
         end
 
         g_mydata.frags_sols       = {};
         g_mydata.im_recs_color    = {};
+        g_mydata.im_recs_alpha    = {};
         g_mydata.im_recs_filled   = {};
-        g_mydata.im_current       = [];
+        g_mydata.im_current_color = [];
+        g_mydata.im_current_alpha = [];
         g_mydata.current_recs_idx = -1;
         set(g_h_reconstructions_listbox, 'string', {});
         delete(get(gca,'Children'));
@@ -1503,26 +1583,29 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % If the list is not empty, we remove all reconstructions
-        if numel(g_mydata.im_recs_color)==0
+        if isempty(g_mydata.im_recs_color) || isempty(g_mydata.im_recs_alpha)
             return;
         end
 
         % We move up the current element
         current_frags_sols  = g_mydata.frags_sols;
         current_recs_color  = g_mydata.im_recs_color;
+        current_recs_alpha  = g_mydata.im_recs_alpha;
         current_recs_filled = g_mydata.im_recs_filled;
         current_dirs        = get(g_h_reconstructions_listbox, 'string');
         current_idx         = get(g_h_reconstructions_listbox, 'value');
         new_idx             = mod(current_idx-2, numel(current_dirs))+1;
 
-        [current_frags_sols{new_idx},current_frags_sols{current_idx}]    = swap_vars(current_frags_sols{current_idx}, current_frags_sols{new_idx});
-        [current_recs_color{new_idx},current_recs_color{current_idx}]    = swap_vars(current_recs_color{current_idx}, current_recs_color{new_idx});
-        [current_recs_filled{new_idx},current_recs_filled{current_idx}]  = swap_vars(current_recs_filled{current_idx}, current_recs_filled{new_idx});
-        [current_dirs{new_idx},current_dirs{current_idx}]                = swap_vars(current_dirs{current_idx}, current_dirs{new_idx});
+        [current_frags_sols{new_idx},current_frags_sols{current_idx}]   = swap_vars(current_frags_sols{current_idx}, current_frags_sols{new_idx});
+        [current_recs_color{new_idx},current_recs_color{current_idx}]   = swap_vars(current_recs_color{current_idx}, current_recs_color{new_idx});
+        [current_recs_alpha{new_idx},current_recs_alpha{current_idx}]   = swap_vars(current_recs_alpha{current_idx}, current_recs_alpha{new_idx});
+        [current_recs_filled{new_idx},current_recs_filled{current_idx}] = swap_vars(current_recs_filled{current_idx}, current_recs_filled{new_idx});
+        [current_dirs{new_idx},current_dirs{current_idx}]               = swap_vars(current_dirs{current_idx}, current_dirs{new_idx});
 
         set(g_h_reconstructions_listbox, 'string', current_dirs);
         g_mydata.frags_sols     = current_frags_sols;
         g_mydata.im_recs_color  = current_recs_color;
+        g_mydata.im_recs_alpha  = current_recs_alpha;
         g_mydata.im_recs_filled = current_recs_filled;
 
         g_mydata.current_recs_idx = new_idx;
@@ -1537,13 +1620,14 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % If the list is not empty, we remove all reconstructions
-        if numel(g_mydata.im_recs_color)==0
+        if isempty(g_mydata.im_recs_color) || isempty(g_mydata.im_recs_alpha)
             return;
         end
 
         % We move up the current element
         current_frags_sols  = g_mydata.frags_sols;
         current_recs_color  = g_mydata.im_recs_color;
+        current_recs_alpha  = g_mydata.im_recs_alpha;
         current_recs_filled = g_mydata.im_recs_filled;
         current_dirs        = get(g_h_reconstructions_listbox, 'string');
         current_idx         = get(g_h_reconstructions_listbox, 'value');
@@ -1551,12 +1635,14 @@ function varargout = arteak_gui( varargin )
 
         [current_frags_sols{new_idx},current_frags_sols{current_idx}]   = swap_vars(current_frags_sols{current_idx}, current_frags_sols{new_idx});
         [current_recs_color{new_idx},current_recs_color{current_idx}]   = swap_vars(current_recs_color{current_idx}, current_recs_color{new_idx});
+        [current_recs_alpha{new_idx},current_recs_alpha{current_idx}]   = swap_vars(current_recs_alpha{current_idx}, current_recs_alpha{new_idx});
         [current_recs_filled{new_idx},current_recs_filled{current_idx}] = swap_vars(current_recs_filled{current_idx}, current_recs_filled{new_idx});
         [current_dirs{new_idx},current_dirs{current_idx}]               = swap_vars(current_dirs{current_idx}, current_dirs{new_idx});
 
         set(g_h_reconstructions_listbox, 'string', current_dirs);
         g_mydata.frags_sols    = current_frags_sols;
         g_mydata.im_recs_color = current_recs_color;
+        g_mydata.im_recs_alpha = current_recs_alpha;
         g_mydata.im_recs_filled  = current_recs_filled;
 
         g_mydata.current_recs_idx = new_idx;
@@ -1573,8 +1659,9 @@ function varargout = arteak_gui( varargin )
         % We enable/disable alpha channel and update the view of the image
         g_mydata.use_recs_alpha = ~g_mydata.use_recs_alpha;
 
-        if ~isempty(g_mydata.im_recs_color)
-            g_mydata.im_current = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+        if ~isempty(g_mydata.im_recs_color) && ~isempty(g_mydata.im_recs_alpha)
+            g_mydata.im_current_color = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+            g_mydata.im_current_alpha = g_mydata.im_recs_alpha{g_mydata.current_recs_idx};
             update_view(g_mydata.use_recs_alpha);
             update_reconstruction();
         end
@@ -1590,8 +1677,9 @@ function varargout = arteak_gui( varargin )
         % We enable/disable flag and update the view of the image
         g_mydata.show_recs_idx = ~g_mydata.show_recs_idx;
 
-        if ~isempty(g_mydata.im_recs_color)
-            g_mydata.im_current = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+        if ~isempty(g_mydata.im_recs_color) && ~isempty(g_mydata.im_recs_alpha)
+            g_mydata.im_current_color = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+            g_mydata.im_current_alpha = g_mydata.im_recs_alpha{g_mydata.current_recs_idx};
             update_view(g_mydata.use_recs_alpha);
             update_reconstruction();
         end
@@ -1607,8 +1695,9 @@ function varargout = arteak_gui( varargin )
         % We enable/disable flag and update the view of the image
         g_mydata.show_recs_inner_circle = ~g_mydata.show_recs_inner_circle;
 
-        if ~isempty(g_mydata.im_recs_color)
-            g_mydata.im_current = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+        if ~isempty(g_mydata.im_recs_color) && ~isempty(g_mydata.im_recs_alpha)
+            g_mydata.im_current_color = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+            g_mydata.im_current_alpha = g_mydata.im_recs_alpha{g_mydata.current_recs_idx};
             update_view(g_mydata.use_recs_alpha);
             update_reconstruction();
         end
@@ -1624,8 +1713,9 @@ function varargout = arteak_gui( varargin )
         % We enable/disable flag and update the view of the image
         g_mydata.show_recs_outer_circle = ~g_mydata.show_recs_outer_circle;
 
-        if ~isempty(g_mydata.im_recs_color)
-            g_mydata.im_current = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+        if ~isempty(g_mydata.im_recs_color) && ~isempty(g_mydata.im_recs_alpha)
+            g_mydata.im_current_color = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+            g_mydata.im_current_alpha = g_mydata.im_recs_alpha{g_mydata.current_recs_idx};
             update_view(g_mydata.use_recs_alpha);
             update_reconstruction();
         end
@@ -1641,8 +1731,9 @@ function varargout = arteak_gui( varargin )
         % We enable/disable flag and update the view of the image
         g_mydata.show_recs_neighbors = ~g_mydata.show_recs_neighbors;
 
-        if ~isempty(g_mydata.im_recs_color)
-            g_mydata.im_current = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+        if ~isempty(g_mydata.im_recs_color) && ~isempty(g_mydata.im_recs_alpha)
+            g_mydata.im_current_color = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+            g_mydata.im_current_alpha = g_mydata.im_recs_alpha{g_mydata.current_recs_idx};
             update_view(g_mydata.use_recs_alpha);
             update_reconstruction();
         end
@@ -1660,8 +1751,9 @@ function varargout = arteak_gui( varargin )
         set(h_object, 'backgroundcolor', g_mydata.recs_idx_color);
 
         % We update the current view of the image
-        if ~isempty(g_mydata.im_recs_color)
-            g_mydata.im_current = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+        if ~isempty(g_mydata.im_recs_color) && ~isempty(g_mydata.im_recs_alpha)
+            g_mydata.im_current_color = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+            g_mydata.im_current_alpha = g_mydata.im_recs_alpha{g_mydata.current_recs_idx};
             update_view(g_mydata.use_recs_alpha);
             update_reconstruction();
         end
@@ -1679,8 +1771,9 @@ function varargout = arteak_gui( varargin )
         set(h_object, 'backgroundcolor', g_mydata.recs_inner_circle_color);
 
         % We update the current view of the image
-        if ~isempty(g_mydata.im_recs_color)
-            g_mydata.im_current = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+        if ~isempty(g_mydata.im_recs_color) && ~isempty(g_mydata.im_recs_alpha)
+            g_mydata.im_current_color = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+            g_mydata.im_current_alpha = g_mydata.im_recs_alpha{g_mydata.current_recs_idx};
             update_view(g_mydata.use_recs_alpha);
             update_reconstruction();
         end
@@ -1698,8 +1791,9 @@ function varargout = arteak_gui( varargin )
         set(h_object, 'backgroundcolor', g_mydata.recs_outer_circle_color);
 
         % We update the current view of the image
-        if ~isempty(g_mydata.im_recs_color)
-            g_mydata.im_current = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+        if ~isempty(g_mydata.im_recs_color) && ~isempty(g_mydata.im_recs_alpha)
+            g_mydata.im_current_color = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+            g_mydata.im_current_alpha = g_mydata.im_recs_alpha{g_mydata.current_recs_idx};
             update_view(g_mydata.use_recs_alpha);
             update_reconstruction();
         end
@@ -1717,8 +1811,9 @@ function varargout = arteak_gui( varargin )
         set(h_object, 'backgroundcolor', g_mydata.recs_neighbors_color);
 
         % We update the current view of the image
-        if ~isempty(g_mydata.im_recs_color)
-            g_mydata.im_current = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+        if ~isempty(g_mydata.im_recs_color) && ~isempty(g_mydata.im_recs_alpha)
+            g_mydata.im_current_color = g_mydata.im_recs_color{g_mydata.current_recs_idx};
+            g_mydata.im_current_alpha = g_mydata.im_recs_alpha{g_mydata.current_recs_idx};
             update_view(g_mydata.use_recs_alpha);
             update_reconstruction();
         end
@@ -1764,20 +1859,22 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % We open the reconstruction subwindow
-        [new_frags_sol,new_im_rec_color,new_im_rec_filled,rec_name] = arteak_reconstruction(g_fh_main);
+        [new_frags_sol,new_im_rec_color,new_im_rec_alpha,new_im_rec_filled,rec_name] = arteak_reconstruction(g_fh_main);
 
         % We check if results are consistent
-        if ~isempty(new_frags_sol) && ~isempty(new_im_rec_color) && ~isempty(new_im_rec_filled)
+        if ~isempty(new_frags_sol) && ~isempty(new_im_rec_color) && ~isempty(new_im_rec_filled) && ~isempty(new_im_rec_alpha)
             % If so, we add results to their respective arrays
-            g_mydata.im_recs_filled  = {g_mydata.im_recs_filled{:},new_im_rec_filled};
-            g_mydata.im_recs_color = {g_mydata.im_recs_color{:},new_im_rec_color};
-            g_mydata.frags_sols    = {g_mydata.frags_sols{:},new_frags_sol};
+            g_mydata.im_recs_filled = {g_mydata.im_recs_filled{:},new_im_rec_filled};
+            g_mydata.im_recs_color  = {g_mydata.im_recs_color{:},new_im_rec_color};
+            g_mydata.im_recs_alpha  = {g_mydata.im_recs_alpha{:},new_im_rec_alpha};
+            g_mydata.frags_sols     = {g_mydata.frags_sols{:},new_frags_sol};
 
             recs_list = get(g_h_reconstructions_listbox, 'string');
             set(g_h_reconstructions_listbox, 'string', {recs_list{:},rec_name});
             g_mydata.current_recs_idx = numel(recs_list)+1;
             set(g_h_reconstructions_listbox, 'value', g_mydata.current_recs_idx);
-            g_mydata.im_current = new_im_rec_color;
+            g_mydata.im_current_color = new_im_rec_color;
+            g_mydata.im_current_alpha = new_im_rec_alpha;
             update_view(g_mydata.use_recs_alpha);
             update_reconstruction();
         end
@@ -1816,16 +1913,18 @@ function varargout = arteak_gui( varargin )
         clear_view = false;
 
         % We unload fresco data
-        if ~isempty(g_mydata.im_fresco)
+        if ~isempty(g_mydata.im_fresco_color)
             g_mydata.current_fresco_dir = [];
-            g_mydata.im_fresco          = [];
+            g_mydata.im_fresco_color    = [];
+            g_mydata.im_fresco_alpha    = [];
             clear_view                  = true;
             set(g_h_fresco_filename_edit, 'string', '');
         end
 
         % We unload reconstructions data
-        if numel(g_mydata.im_recs_color)>0
+        if ~isempty(g_mydata.im_recs_color)
             g_mydata.im_recs_color    = {};
+            g_mydata.im_recs_alpha    = {};
             g_mydata.im_recs_filled   = {};
             g_mydata.current_recs_idx = -1;
             clear_view                = true;
@@ -1833,7 +1932,7 @@ function varargout = arteak_gui( varargin )
         end
 
         % We unload fragments data
-        if numel(g_mydata.frags_infos)>0
+        if ~isempty(g_mydata.frags_infos)
             g_mydata.current_frags_dir     = [];
             g_mydata.frags_infos           = {};
             g_mydata.gen_parameters        = [];
@@ -1845,7 +1944,8 @@ function varargout = arteak_gui( varargin )
 
         % We make as empty current image view
         if clear_view
-            g_mydata.im_current = [];
+            g_mydata.im_current_color = [];
+            g_mydata.im_current_alpha = [];
             delete(get(gca,'Children'));
             update_view(g_mydata.use_fresco_alpha);
         end
@@ -1859,7 +1959,7 @@ function varargout = arteak_gui( varargin )
         g_mydata = guidata(g_fh_main);
 
         % We check if current view is available
-        if isempty(g_mydata.im_current)
+        if isempty(g_mydata.im_current_color) || isempty(g_mydata.im_current_alpha)
             uiwait(errordlg('Please fill view with some image before saving it', 'ARTEAK ERROR', 'modal'));
         else
             % We get an image of current view
@@ -1881,6 +1981,7 @@ function varargout = arteak_gui( varargin )
 
     function quit_callback( h_object, event_data )
         delete(gcf);
+        save_session_variables();
     end
 
     function help_software_callback( h_object, event_data )

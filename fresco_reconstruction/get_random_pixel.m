@@ -1,9 +1,9 @@
-% Function returning random pixels from given confidence map (rejection sampling or slice sampling).
+% Function returning pixel coordinates rnadomly sampled from a given confidence map (rejection sampling or slice sampling).
 % 
 % Inputs:
 %   * im_map:     2D confidence map with normalized intensities in [0,1] (double format)
 %   * threshold:  confidence above which pixels are sampled (in [0,1])
-%   * N:          number of pixels (>0)
+%   * N:          number of pixels to sample (>0)
 % 
 % Outputs:
 %   * coords:  N x 2 matrix of integers [py_1,px_1;...;py_1,px_n]

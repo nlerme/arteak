@@ -25,7 +25,7 @@ function generate_dataset()
         % Parameters
         seed                     = 1;                                                      % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
         verbose                  = false;                                                  % Enables/disables display of messages on command window
-        fragments_sizes          = {[0.1,0.1],[0.15,0.15]};                                % Fragment sizes {[sy,sx]}_{i=1}^n in percentage of the smallest size of the fresco image (in ]0,1[)
+        fragments_sizes          = {[0.1,0.1],[0.15,0.15],[0.2,0.2],[0.25,0.25]};          % Fragment sizes {[sy,sx]}_{i=1}^n in percentage of the smallest size of the fresco image (in ]0,1[)
         grayscale_conversion     = false;                                                  % Enables/disables grayscale conversion of both fresco and fragment images (true or false)
         use_rotated_fragments    = true;                                                   % Enables/disables use of rotated fragments (true or false)
         erosion_fragments_rates  = [0.0,0.003];                                            % Amount of erosion in percentage of the smallest size of the fresco image (in [0,1[)
@@ -218,7 +218,7 @@ function generate_dataset()
 
                             % We save the parameters used for generating fragment images
                             save_gen_parameters({'fragment_size', 'missing_rate', 'spurious_rate', 'nearby_frags_gap'}, ...
-                                                {uint32(fragment_size(1)), double(missing_rate*100), double(spurious_rate*100), double(erosion_radius)}, ...
+                                                {uint32(fragment_size(1)), double(missing_rate*100), double(spurious_rate*100), double(2*erosion_radius)}, ...
                                                 parameters_fn);
 
                             % We save the set of rotated and eroded fragment images

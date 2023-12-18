@@ -13,3 +13,25 @@
 %figure, imshow(inpaintExemplar(im_src_color, ~im_src_alpha, 'FillOrder', 'tensor', 'PatchSize', [5,5]), []);
 %figure, imshow(inpaintExemplar(im_src_color, ~im_src_alpha, 'FillOrder', 'gradient', 'PatchSize', [3,3]), []);
 %figure, imshow(inpaintExemplar(im_src_color, ~im_src_alpha, 'FillOrder', 'gradient', 'PatchSize', [5,5]), []);
+
+%--------------------------------------------------------------------------
+
+a=randi(3,[10,10])
+r=zeros(size(a));
+
+for k=1:9
+    if k==5
+        continue;
+    end
+    b = zeros(3);
+    b(5) = 1;
+    b(k) = -1;
+    r = r + abs(imfilter(a,b));
+end
+
+r
+
+a=[1,2,3,4;5,6,7,8;9,8,7,6;5,4,3,2]
+b=[0;1;-1]
+%a(end,:)=0;
+imfilter(a,b)

@@ -3,7 +3,7 @@
 % 
 % Inputs:
 %   * im_fresco_color:        color image of fresco (non empty uint8 matrix)
-%   * im_fresco_alpha:        alpha image of fresco (non empty uint8 matrix)
+%   * im_fresco_alpha:        alpha image of fresco (non empty logical matrix)
 %   * frags_infos:            collection of fragments (cell array with RGBA images)
 %   * general_parameters:     value of general parameters (non empty cell array)
 %   * init_parameters:        value of init parameters (non empty cell array)
@@ -14,9 +14,6 @@
 % Outputs:
 %   * frags_sol:  solution composed of fragments (cell array)
 function frags_sol = run_init_blind_reconstruction( im_fresco_color, im_fresco_alpha, frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt )
-    % We erase the content of the color image according to the alpha channel
-    im_fresco_color = zeros(size(im_fresco_alpha));
-
     % We initialize variables
     interpolation_type          = get_parameter_value(general_parameters, 'interpolation_type');
     verbose                     = get_parameter_value(general_parameters, 'verbose');
@@ -62,7 +59,7 @@ function frags_sol = run_init_blind_reconstruction( im_fresco_color, im_fresco_a
                 end
 
                 % We try to place the fragment
-                frag = place_fragment(frags_infos, idx, translation, angle, frags_sol, im_fresco_color, im_fresco_alpha, interpolation_type, outside_fragment_tolerance, fragments_overlap_tolerance);
+                frag = place_fragment(frags_infos, idx, translation, angle, frags_sol, [], im_fresco_alpha, interpolation_type, outside_fragment_tolerance, fragments_overlap_tolerance);
 
                 if ~isempty(frag)
                     % We add it to the list
@@ -111,7 +108,7 @@ function frags_sol = run_init_blind_reconstruction( im_fresco_color, im_fresco_a
             end
 
             % We try to place the fragment
-            frag = place_fragment(frags_infos, idx, translation, angle, frags_sol, im_fresco_color, im_fresco_alpha, interpolation_type, outside_fragment_tolerance, fragments_overlap_tolerance);
+            frag = place_fragment(frags_infos, idx, translation, angle, frags_sol, [], im_fresco_alpha, interpolation_type, outside_fragment_tolerance, fragments_overlap_tolerance);
 
             if ~isempty(frag)
                 % We add id to the image with the union of placed fragments

@@ -18,7 +18,7 @@ function run_reconstructions()
         seed             = 1; % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
         results_root_dir = ['..' filesep '..' filesep 'results' filesep 'tests'];
         data_root_dir    = ['..' filesep '..' filesep 'data' filesep 'regular'];
-        degradation_rate = 80; % degradation level of the fresco image (in {0,...,100})
+        degradation_rate = 0; % degradation level of the fresco image (in {0,...,100})
         %------------------------------------------------------------------
 
         % We add required paths recursively
@@ -55,14 +55,23 @@ function run_reconstructions()
         %config_name = [fresco_name '_2019-2-20_17.29.23'];
 
         %fresco_name = 'Giotto_EntryIntoJerusalem_1000x941';
-        %config_name = [fresco_name '_95_0_0_0'];
+        %config_name = [fresco_name '_95_0_0_3'];
+        %config_name = [fresco_name '_189_0_0_3'];
         %config_name = [fresco_name '_2019-2-19_15.31.27'];
         %config_name = [fresco_name '_2019-2-19_15.31.30'];
         %config_name = [fresco_name '_2019-2-19_15.31.33'];
 
+        %fresco_name = 'Vasari_PaulIIIFarnese_1006x759';
+        %config_name = [fresco_name '_75_0_0_2'];
+        %config_name = [fresco_name '_189_0_0_2'];
+
+        %fresco_name = 'Signorelli_Dannati_1010x700';
+        %config_name = [fresco_name '_71_0_0_2'];
+        %config_name = [fresco_name '_175_0_0_2'];
+
         fresco_name = 'PierodellaFrancesca_Resurrezione_730x826';
-        config_name = [fresco_name '_109_0_0_0'];
-        %config_name = [fresco_name '_109_0_0_2'];
+        %config_name = [fresco_name '_73_0_0_0'];
+        config_name = [fresco_name '_183_0_0_0'];
         %config_name = [fresco_name '_2019-2-28_13.55.54'];
         %config_name = [fresco_name '_2019-2-28_13.56.15'];
         %config_name = [fresco_name '_2019-2-28_13.56.3'];
@@ -111,7 +120,7 @@ function run_reconstructions()
         % General parameters
         verbose                   = true;       % Enables/disables verbose mode (true or false)
         show_figures              = false;      % Enables/disables display of figures (true or false)
-        recompute_preprocessing   = false;      % Boolean indicating if preprocessing step is recomputed or loaded (true or false)
+        recompute_preprocessing   = true;      % Boolean indicating if preprocessing step is recomputed or loaded (true or false)
         save_intermediate_results = true;       % Enables/disables saving of intermediate results (true or false)
         save_ground_truth_results = true;       % Enables/disables saving of ground truth results (true or false)
         interpolation_type        = 'bilinear'; % Type of interpolation used for geometrical transform of fragments (non empty string)
@@ -132,7 +141,7 @@ function run_reconstructions()
                               struct('name', 'background_color', 'value', background_color)};
 
         % Initialization parameters
-        recompute_init                     = true;   % Boolean indicating if initialization step is recomputed or loaded (true or false)
+        recompute_init                     = true;    % Boolean indicating if initialization step is recomputed or loaded (true or false)
         outside_fragment_tolerance         = 0.1;     % Tolerance threshold deciding if a fragment is outside fresco model or not (in [0,1])
         fragments_overlap_tolerance        = 0.1;     % Tolerance threshold deciding if two fragments overlap or not (in [0,1])
         features_detection_threshold1      = 0.01;    % First threshold for detecting features both in fresco and fragments (>=0)
@@ -169,14 +178,14 @@ function run_reconstructions()
         outside_fragment_tolerance  = 5;     % Tolerance parameter controlling if a fragment is outside fresco model or not (in pixels, >=0)
         fragments_overlap_tolerance = 5;     % Tolerance parameter controlling if two fragments overlap or not (in pixels, >=0)
         beta_d                      = 1.0;   % Weighting parameter for the term E_d (>=0.0)
-        beta_a                      = 0.0;   % Weighting parameter for the term E_a (>=0.0)
-        beta_inc                    = 1000.0; % Weighting parameter for the term E_{inc} (>=0.0)
-        beta_c                      = 1000.0; % Weighting parameter for the term E_c (>=0.0)
-        beta_no                     = 1000.0; % Weighting parameter for the term E_{no} (>=0.0)
-        beta_sf                     = 1.0;  % Weighting parameter for the term E_{sf} (>=0.0)
+        beta_a                      = 0.01;   % Weighting parameter for the term E_a (>=0.0)
+        beta_inc                    = 1000000.0; % Weighting parameter for the term E_{inc} (>=0.0)
+        beta_c                      = 1000000.0; % Weighting parameter for the term E_c (>=0.0)
+        beta_no                     = 1000000.0; % Weighting parameter for the term E_{no} (>=0.0)
+        beta_sf                     = 0.5;  % Weighting parameter for the term E_{sf} (>=0.0)
         lambda                      = 20.0;  % Slope parameter of psi function (>0)
         mu                          = -0.995; % Shift parameter of psi function (in [-1,1])
-        nb_iterations               = 2000;  % Number of iterations of MPP algorithm (>=1)
+        nb_iterations               = 1;  % Number of iterations of MPP algorithm (>=1)
 
         mpp_parameters = {struct('name', 'recompute_mpp', 'value', recompute_mpp), ...
                           struct('name', 'outside_fragment_tolerance', 'value', outside_fragment_tolerance), ...
@@ -202,6 +211,9 @@ function run_reconstructions()
         if isempty(im_fresco_color) || isempty(im_fresco_alpha)
             error('Unable to load fresco image. Wrong path, missing alpha channel or unavailable degradation rate?');
         end
+
+        % We threshold the alpha channel of fresco to limit memory usage
+        im_fresco_alpha = (im_fresco_alpha>0);
 
         % We load the geometric constraints file
         msg('+ loading of geometric constraints', verbose);
@@ -255,8 +267,14 @@ function run_reconstructions()
                 error('The number of channels of any fragment image must be the same as the one for the fresco image');
             end
 
-            frag_area      = sum(sum(im_frag_alpha>0));
-            frags_infos{k} = struct('color', im_frag_color, 'alpha', im_frag_alpha, 'area', frag_area);
+            % We correct image intensities near fragment boundary based on alpha channel
+            im_frag_color = correct_fragment_image_intensities(im_frag_color, im_frag_alpha);
+
+            % We threshold alpha channel to limit memory usage
+            im_frag_alpha = (im_frag_alpha>0);
+
+            % We add fragment images to the list
+            frags_infos{k} = struct('color', im_frag_color, 'alpha', im_frag_alpha);
         end
 
         % We reconstruct the fresco

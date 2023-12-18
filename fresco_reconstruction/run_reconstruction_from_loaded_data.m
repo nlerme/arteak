@@ -2,7 +2,7 @@
 % 
 % Inputs:
 %   * im_fresco_color:        color image of fresco (non empty uint8 matrix)
-%   * im_fresco_alpha:        alpha image of fresco (non empty uint8 matrix)
+%   * im_fresco_alpha:        alpha image of fresco (non empty logical matrix)
 %   * frags_infos:            collection of fragments (non empty cell array)
 %   * general_parameters:     general parameters for reconstruction (cell array)
 %   * init_parameters:        init parameters for reconstruction (cell array)
@@ -62,24 +62,15 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             im_frag_color = padarray(im_frag_color, [1,1], 'both');
             im_frag_alpha = padarray(im_frag_alpha, [1,1], 'both');
 
-            % We correct image intensities near fragment boundary due to interpolation
-            for c=1:size(im_frag_color,3)
-                im_tmp = double(im_frag_color(:,:,c));
-                fresco_idx_t = find(im_frag_alpha>0);
-                im_tmp(fresco_idx_t) = (255.0*im_tmp(fresco_idx_t)./(1+double(im_frag_alpha(fresco_idx_t))));
-                im_frag_color(:,:,c) = uint8(im_tmp);
-            end
-
-            % We threshold alpha channel to ensure that it is a binary image and compute its area
-            im_frag_alpha = (im_frag_alpha>0);
-            frag_area     = sum(im_frag_alpha(:));
+            % We compute the area of the fragment based on the alpha channel
+            frag_area = sum(im_frag_alpha(:));
 
             % We compute inscribed and circumscribed circles
             [outer_circle_center,outer_circle_radius] = get_outer_circle(im_frag_alpha, 200, false); % nb_iterations = 200
             [inner_circle_center,inner_circle_radius] = get_inner_circle(im_frag_alpha, outer_circle_center);
 
             % If the fragment is too small, we pad it again and update centers of circles
-            extrapolation_distance = max(5, 3*nearby_frags_gap); % extrapolation gap (must be larger than nearby_frags_gap)
+            extrapolation_distance = max(10, 2.5*nearby_frags_gap); % extrapolation gap (must be larger than nearby_frags_gap)
             margin                 = (2*extrapolation_distance); % overall gap (must be larger than 2*extrapolation_distance)
             d                      = get_largest_distance(inner_circle_center, im_frag_alpha);
             fs                     = round(d+margin-0.5*min(size(im_frag_alpha)));
@@ -116,7 +107,7 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
                 im_tmp(frag_idx) = 0;
                 im_frag_color_ext(:,:,c) = im_tmp;
             end
-            imwrite(im_frag_color_ext, sprintf('im_frag_ext_%04d.png', k));
+            %imwrite(im_frag_color_ext, sprintf('im_frag_ext_%04d.png', k));
             %imwrite(im_frag_color, sprintf('im_frag_%04d.png', k));
 
             % We compute gradients of grayscale extrapolated fragment image
@@ -262,8 +253,8 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             [~,im_rec_bnd,im_rec_color] = get_reconstructed_fresco(im_fresco_color, final_frags_infos, frags_gt, interpolation_type, background_color);
             im_rec_bnd                  = uint8((im_rec_bnd>0)*255);
 
-            imwrite(im_rec_bnd, [results_dir filesep 'gt_rec_bnd.png'], 'Alpha', im_fresco_alpha);
-            imwrite(im_rec_color, [results_dir filesep 'gt_rec_color.png'], 'Alpha', im_fresco_alpha);
+            imwrite(im_rec_bnd, [results_dir filesep 'gt_rec_bnd.png'], 'Alpha', uint8(255.0*im_fresco_alpha));
+            imwrite(im_rec_color, [results_dir filesep 'gt_rec_color.png'], 'Alpha', uint8(255.0*im_fresco_alpha));
             %imwrite(im_rec_bnd, [results_dir filesep 'gt_rec_bnd.png']);
             %imwrite(im_rec_color, [results_dir filesep 'gt_rec_color.png']);
 
@@ -292,18 +283,18 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
 
         % Starting timer
         ttt = tic;
-        load(mpp_data_fn, 'mpp_frags_sol');
-        init_frags_sol = mpp_frags_sol;
+        %load(mpp_data_fn, 'mpp_frags_sol');
+        %init_frags_sol = mpp_frags_sol;
 
-%         if sum(im_fresco_alpha(:))==0
-%             % We deal with the case where the fresco image is unavailable
-%             msg(sprintf('  + blind placement'), verbose);
-%             init_frags_sol = run_init_blind_reconstruction(im_fresco_color, im_fresco_alpha, final_frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
-%         else
-%             % We deal with the case where the fresco image is at least partially available
-%             msg(sprintf('  + non-blind placement'), verbose);
-%             init_frags_sol = run_init_non_blind_reconstruction(im_fresco_color, im_fresco_alpha, final_frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
-%         end
+        if sum(im_fresco_alpha(:))==0
+            % We deal with the case where the fresco image is unavailable
+            msg(sprintf('  + blind placement'), verbose);
+            init_frags_sol = run_init_blind_reconstruction(im_fresco_color, im_fresco_alpha, final_frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
+        else
+            % We deal with the case where the fresco image is at least partially available
+            msg(sprintf('  + non-blind placement'), verbose);
+            init_frags_sol = run_init_non_blind_reconstruction(im_fresco_color, im_fresco_alpha, final_frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
+        end
 
         % The initialization is taken as randomly selected fragments
         %init_frags_sol = run_init_blind_reconstruction(im_fresco_color, im_fresco_alpha, final_frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt);
@@ -337,8 +328,8 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             % PNG files
             [~,im_init_rec_bnd,im_init_rec_color] = get_reconstructed_fresco(im_fresco_color, final_frags_infos, init_frags_sol, interpolation_type, background_color);
             im_init_rec_bnd                       = uint8(255*(im_init_rec_bnd>0));
-            %imwrite(im_init_rec_bnd, [results_dir filesep 'init_rec_bnd.png'], 'Alpha', im_fresco_alpha);
-            %imwrite(im_init_rec_color, [results_dir filesep 'init_rec_color.png'], 'Alpha', im_fresco_alpha);
+            %imwrite(im_init_rec_bnd, [results_dir filesep 'init_rec_bnd.png'], 'Alpha', uint8(255.0*im_fresco_alpha));
+            %imwrite(im_init_rec_color, [results_dir filesep 'init_rec_color.png'], 'Alpha', uint8(255.0*im_fresco_alpha));
             imwrite(im_init_rec_bnd, [results_dir filesep 'init_rec_bnd.png']);
             imwrite(im_init_rec_color, [results_dir filesep 'init_rec_color.png']);
 
@@ -407,8 +398,8 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             % PNG files
             [~,im_mpp_rec_bnd,im_mpp_rec_color] = get_reconstructed_fresco(im_fresco_color, final_frags_infos, mpp_frags_sol, interpolation_type, background_color);
             im_mpp_rec_bnd                      = uint8(255*(im_mpp_rec_bnd>0));
-            %imwrite(im_mpp_rec_bnd, [results_dir filesep 'mpp_rec_bnd.png'], 'Alpha', im_fresco_alpha);
-            %imwrite(im_mpp_rec_color, [results_dir filesep 'mpp_rec_color.png'], 'Alpha', im_fresco_alpha);
+            %imwrite(im_mpp_rec_bnd, [results_dir filesep 'mpp_rec_bnd.png'], 'Alpha', uint8(255.0*im_fresco_alpha));
+            %imwrite(im_mpp_rec_color, [results_dir filesep 'mpp_rec_color.png'], 'Alpha', uint8(255.0*im_fresco_alpha));
             imwrite(im_mpp_rec_bnd, [results_dir filesep 'mpp_rec_bnd.png']);
             imwrite(im_mpp_rec_color, [results_dir filesep 'mpp_rec_color.png']);
 
@@ -425,7 +416,7 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             %close(fh);
 
             % MAT file
-            %save(mpp_data_fn, 'mpp_frags_sol', 'mpp_time', '-v7.3');
+            save(mpp_data_fn, 'mpp_frags_sol', 'mpp_time', '-v7.3');
         end
     else
         % We load results
