@@ -1,18 +1,19 @@
 Presentation
 ------------
-ARTEAK is an scientific project aiming at recovering the optimal spatial organization of a damaged fresco from its original elements with or without a picture of the fresco. 
+ARTEAK is a research project aiming at recovering the optimal spatial organization of a damaged fresco from its original elements with or without a picture of the fresco. 
 This problem is very challenging because of local aspects (elements must locally match with each other) but also global aspects (the reassembled elements must depict a picture 
 making sense). The main application of this problem concerns the reconstruction of artworks in cultural heritage and archaeology. It is of great importance to to improve the 
 understanding and the conservation of artworks.
 
-The software related to this project is mostly written in MATLAB and is distributed under GPL license but only for research purposes. It has been heavily tested on a large 
-dataset with simulated undegraded fragmented frescoes [1]. This software involves 5 distinct different packages:
+The software related to this project is distributed under LGPL license but only for research purposes. It has been heavily tested on a large dataset with simulated 
+fragmented frescoes [1]. This software involves 6 distinct different packages:
 
-* fresco_reconstruction : scripts for running fresco reconstruction
-* graphical_user_interface : interface for handling multiple fresco reconstructions
-* common_tools : scripts shared by one or several packages
-* regular_fragments_generation : script for constructing a dataset derived from [1] with fragments of regular shape and simulated degradations on the fresco model.
-* irregular_fragments_generation : script for constructing a dataset derived from [1] with fragments of irregular shape and simulated degradations on the fresco model.
+* **fresco_reconstruction** : scripts for running automatic fresco reconstruction
+* **graphical_user_interface** : interface for handling fresco reconstructions
+* **common_tools** : mandatory dependencies
+* **regular_fragments_generation** : script for generating a dataset derived from [1] with fragments of regular shape.
+* **irregular_fragments_generation_piercarlo** : script for generating a dataset derived from [1] with fragments of irregular shape.
+* **irregular_fragments_generation_nicolas** : script for generating a dataset with fragments of irregular shape.
 
 The fresco reconstruction is based on Marked point processes and solved with an algorithm alternating sampling, fragments selection and fragments placement until convergence [3]. 
 The algorithm is initialized with [2] or exhaustive, depending on the availability of the fresco model. The sampling step is performed using machine learning. The fragments 
