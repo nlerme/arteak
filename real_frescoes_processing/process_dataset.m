@@ -1,6 +1,5 @@
-% This function creates a new dataset with fragments of irregular shape
-% from an existing one.
-function generate_dataset()
+% This function processes real data and creates a new dataset.
+function process_dataset()
     % We run the main function
     main();
 

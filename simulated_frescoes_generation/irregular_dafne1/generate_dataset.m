@@ -24,14 +24,14 @@ function generate_dataset()
         end
 
         % Parameters
-        seed                     = 1;                                                      % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
-        verbose                  = false;                                                  % Enables/disables display of messages on command window
-        fresco_degradation_rates = 0.0:0.1:1.0;                                            % Percentages of degradation of the fresco image (in [0,1])
-        root_frescoes_dir        = ['..' filesep '..' filesep 'data' filesep 'irregular']; % Input/output frescoes directory (string)
-        background_color         = [0,0,0];                                                % RGB color of reconstructed fresco (in [0,1]^3)
-        interpolation_type       = 'bilinear';                                             % Interpolation type for reconstructing frescoes from fragments
-        idx_color                = 'white';                                                % Color of fragment index in reconstructed fresco (string or [0,1]^3)
-        neighbors_color          = 'cyan';                                                 % Color of neighboring relationships between fragments in reconstructed fresco (string or [0,1]^3)
+        seed                     = 1;                                                                                 % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
+        verbose                  = false;                                                                             % Enables/disables display of messages on command window (true or false)
+        fresco_degradation_rates = 0.0:0.1:1.0;                                                                       % Percentages of degradation of the fresco image (vector with entries in [0,1])
+        root_frescoes_dir        = ['..' filesep '..' filesep 'data' filesep 'simulated' filesep 'irregular_dafne1']; % Input/output frescoes directory (string)
+        background_color         = [0,0,0];                                                                           % RGB color of reconstructed fresco (in [0,1]^3)
+        interpolation_type       = 'bilinear';                                                                        % Interpolation type for reconstructing frescoes from fragments (nearest, bilinear, bicubic, etc.)
+        idx_color                = 'white';                                                                           % Color of fragment index in reconstructed fresco (string or [0,1]^3)
+        neighbors_color          = 'cyan';                                                                            % Color of neighboring relationships between fragments in reconstructed fresco (string or [0,1]^3)
 
         % We set the seed for pseudo random number generation. simdTwister algorithm is used for 
         % reproductibility (same sequence of random numbers will be obtained on different machines)

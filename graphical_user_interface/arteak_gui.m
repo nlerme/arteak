@@ -13,7 +13,7 @@ function varargout = arteak_gui( varargin )
     g_mydata.arteak_version           = 'v0.1 - 27/02/2024';
     g_mydata.software_url             = 'https://nicolaslerme.fr/';
     g_mydata.datasets_url             = 'https://vision.unipv.it/DAFchallenge/DAFNE_dataset/dataset_download.html';
-    g_mydata.data_root_dir            = ['..' filesep '..' filesep 'data' filesep 'irregular_dafne2'];
+    g_mydata.data_root_dir            = ['..' filesep '..' filesep 'data' filesep 'simulated' filesep 'irregular_dafne2'];
     g_mydata.pics_dir                 = ['pics'];
     g_mydata.banner_fn                = [g_mydata.pics_dir filesep 'banner.png'];
     g_mydata.frags_dir                = 'frag_eroded';
@@ -81,15 +81,34 @@ function varargout = arteak_gui( varargin )
                                 'recs_outer_circle_color', ...
                                 'recs_background_color'};
 
+    % We check if the data directory exist
+    if ~isfolder(g_mydata.data_root_dir)
+        uiwait(errordlg(sprintf('Unable to find the data directory %s', g_mydata.data_root_dir), 'ARTEAK ERROR', 'modal'));
+        return;
+    end
+
+    % We check if the pictures directory used by this software exist
+    if ~isfolder(g_mydata.pics_dir)
+        uiwait(errordlg(sprintf('Unable to find the pics directory %s', g_mydata.pics_dir), 'ARTEAK ERROR', 'modal'));
+        return;
+    end
+
+    % We create the results directory if needed
+    if ~isfolder(g_mydata.results_root_dir)
+        mkdir(g_mydata.results_root_dir);
+    else
+        answer = questiondlg(sprintf('Results directory %s found. Delete it?', g_mydata.results_root_dir), 'ARTEAK WARNING', 'Yes', 'No'));
+
+        if strcmp(answer, 'Yes')
+            %rmdir(g_mydata.results_root_dir, 's');
+            disp('[ deleting results root directory ]');
+        end
+    end
+
     % We load session variables (if present)
     load_session_variables();
 
     % We display the banner for a small fraction of time
-    fh_banner = figure('menubar', 'none', ...
-                       'toolbar', 'none', ...
-                       'name', ['About ARTEAK - ' g_mydata.arteak_version], ...
-                       'color', [1,1,1]);
-
     im_banner = load_image(g_mydata.banner_fn, false);
 
     if isempty(im_banner)
@@ -97,6 +116,10 @@ function varargout = arteak_gui( varargin )
         return;
     end
 
+    fh_banner = figure('menubar', 'none', ...
+                       'toolbar', 'none', ...
+                       'name', ['About ARTEAK - ' g_mydata.arteak_version], ...
+                       'color', [1,1,1]);
     imshow(im_banner,[]);
     movegui(fh_banner, 'center');
     pause(2.0);

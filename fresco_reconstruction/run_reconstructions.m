@@ -17,7 +17,7 @@ function run_reconstructions()
         % -----------------------------------------------------------------
         seed             = 1; % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
         results_root_dir = ['..' filesep '..' filesep 'results' filesep 'tests'];
-        data_root_dir    = ['..' filesep '..' filesep 'data' filesep 'regular'];
+        data_root_dir    = ['..' filesep '..' filesep 'data' filesep 'simulated' filesep 'regular'];
         degradation_rate = 0; % degradation level of the fresco image (in {0,...,100})
         %------------------------------------------------------------------
 
