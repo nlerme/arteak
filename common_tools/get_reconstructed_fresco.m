@@ -3,7 +3,8 @@
 % visualization purposes.
 % 
 % Inputs:
-%   * im_fresco:           multi-channels fresco image (uint8)
+%   * fresco_size:         size of the fresco image (2D vector of positive integers)
+%   * nb_channels:         number of the channels in the fresco image (positive integer)
 %   * frags_infos:         infos about fragments (cell array)
 %   * frags_sol:           solution composed of fragments (cell array)
 %   * interpolation_type:  interpolation type (string; e.g. nearest, bilinear, bicubic, etc.)
@@ -13,23 +14,11 @@
 %   * im_filled_frags:  reconstructed fresco with numbered filled fragments (uint64 image)
 %   * im_bnd_frags:     reconstructed fresco with numbered boundaries of fragments (uint64 image)
 %   * im_rec_frags:     reconstructed fresco with colored fragments (uint8 color image)
-function [im_filled_frags,im_bnd_frags,im_rec_frags] = get_reconstructed_fresco( im_fresco, frags_infos, frags_sol, interpolation_type, background_color )
-    % We get the size of fresco and number of channels
-    fresco_size = size(im_fresco);
-    nb_channels = size(im_fresco,3);
-
-    % We check consistency between background color and number of channels of fresco image
-    if nb_channels ~= length(background_color)
-        im_filled_frags = [];
-        im_bnd_frags    = [];
-        im_rec_frags    = [];
-        return;
-    end
-
+function [im_filled_frags,im_bnd_frags,im_rec_frags] = get_reconstructed_fresco( fresco_size, nb_channels, frags_infos, frags_sol, interpolation_type, background_color )
     % We allocate memory for storing results
-    im_filled_frags = zeros(fresco_size(1:2), 'uint64');
-    im_bnd_frags    = zeros(fresco_size(1:2), 'uint64');
-    im_rec_frags    = ones(fresco_size, 'uint8');
+    im_filled_frags = zeros(fresco_size, 'uint64');
+    im_bnd_frags    = zeros(fresco_size, 'uint64');
+    im_rec_frags    = ones([fresco_size,nb_channels], 'uint8');
 
     for k=1:nb_channels
         im_rec_frags(:,:,k) = im_rec_frags(:,:,k)*background_color(k);
@@ -44,7 +33,7 @@ function [im_filled_frags,im_bnd_frags,im_rec_frags] = get_reconstructed_fresco(
 
         % We get corresponding pixel coordinates in fresco image and fragment image
         if isempty(frags_sol{k}.fresco_coords) || isempty(frags_sol{k}.frag_coords)
-            [fresco_coords,frag_coords] = get_transformed_fragment(im_frag_alpha, frags_sol{k}.translation, frags_sol{k}.angle, fresco_size(1:2));
+            [fresco_coords,frag_coords] = get_transformed_fragment(im_frag_alpha, frags_sol{k}.translation, frags_sol{k}.angle, fresco_size);
         else
             fresco_coords = frags_sol{k}.fresco_coords;
             frag_coords   = frags_sol{k}.frag_coords;
@@ -56,8 +45,8 @@ function [im_filled_frags,im_bnd_frags,im_rec_frags] = get_reconstructed_fresco(
         end
 
         % We construct binary image of registered fragment
-        fresco_idx                  = sub2ind(fresco_size(1:2), fresco_coords(:,1), fresco_coords(:,2));
-        im_frag_t_alpha             = zeros(fresco_size(1:2), 'logical');
+        fresco_idx                  = sub2ind(fresco_size, fresco_coords(:,1), fresco_coords(:,2));
+        im_frag_t_alpha             = zeros(fresco_size, 'logical');
         im_frag_t_alpha(fresco_idx) = 1;
 
         % We add resulting fragment image to grayscale fresco reconstruction

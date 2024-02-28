@@ -1,4 +1,4 @@
-% This function builds a dataset with fragments of regular shape
+% This function builds a dataset with fragments of regular shape.
 function generate_dataset()
     % We run the main function
     main();
@@ -23,25 +23,26 @@ function generate_dataset()
         end
 
         % Parameters
-        seed                     = 1;                                                      % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
-        verbose                  = false;                                                  % Enables/disables display of messages on command window
-        fragments_sizes          = {[0.1,0.1],[0.15,0.15],[0.2,0.2],[0.25,0.25]};          % Fragment sizes {[sy,sx]}_{i=1}^n in percentage of the smallest size of the fresco image (in ]0,1[)
-        grayscale_conversion     = false;                                                  % Enables/disables grayscale conversion of both fresco and fragment images (true or false)
-        use_rotated_fragments    = true;                                                   % Enables/disables use of rotated fragments (true or false)
-        erosion_fragments_rates  = [0.0,0.003];                                            % Amount of erosion in percentage of the smallest size of the fresco image (in [0,1[)
-        missing_fragments_rates  = [0.0,0.2];                                              % Percentages of missing fragments (in ]0,1])
-        spurious_fragments_rates = [0.0,0.2];                                              % Percentages of spurious fragments (in [0,1[)
-        fresco_degradation_rates = 0.0:0.1:1.0;                                            % Percentages of degradation of the fresco image (in [0,1])
-        input_frescoes_dir       = ['..' filesep '..' filesep 'data' filesep 'irregular']; % Input frescoes directory (string)
-        input_frescoes_fns       = get_files_list(input_frescoes_dir);                     % Input fresco filenames (string)
-        output_frescoes_dir      = ['..' filesep '..' filesep 'data' filesep 'regular'];   % Output frescoes directory (string)
-        background_color         = [0,0,0];                                                % RGB color of reconstructed fresco (in [0,1]^3)
-        purge_dataset            = true;                                                   % Enables/disables destruction of previous version of dataset
-        idx_color                = 'white';                                                % Color of fragment index in reconstructed fresco (string or [0,1]^3)
-        neighbors_color          = 'cyan';                                                 % Color of neighboring relationships between fragments in reconstructed fresco (string or [0,1]^3)
+        seed                        = 1;                                                             % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
+        verbose                     = false;                                                         % Enables/disables display of messages on command window
+        fragments_sizes             = {[0.1,0.1],[0.15,0.15],[0.2,0.2],[0.25,0.25]};                 % Fragment sizes {[sy,sx]}_{i=1}^n in percentage of the smallest size of the fresco image (in ]0,1[)
+        grayscale_conversion        = false;                                                         % Enables/disables grayscale conversion of both fresco and fragment images (true or false)
+        use_rotated_fragments       = true;                                                          % Enables/disables use of rotated fragments (true or false)
+        fragments_erosion_rates     = [0.0,0.003];                                                   % Amount of erosion in percentage of the smallest size of the fresco image (vector with entries in [0,1[)
+        fragments_missing_rates     = [0.0,0.2];                                                     % Percentages of missing fragments (vector with entries in ]0,1])
+        fragments_spurious_rates    = [0.0,0.2];                                                     % Percentages of spurious fragments (vector with entries in [0,1[)
+        fresco_missing_parts_rates  = linspace(0.0,1.0,10);                                          % Percentages of degradation of the fresco image (vector with entries in [0,1])
+        fresco_missing_parts_params = struct('type', 'perlin', 'nb_octaves', 8, 'persistence', 0.3); % Parameters for simulating degradation over the fresco (struct)
+        input_frescoes_dir          = ['..' filesep '..' filesep 'data' filesep 'irregular'];        % Input frescoes directory (string)
+        input_frescoes_fns          = get_files_list(input_frescoes_dir);                            % Input fresco filenames (cell array of strings)
+        output_frescoes_dir         = ['..' filesep '..' filesep 'data' filesep 'regular'];          % Output frescoes directory (string)
+        background_color            = [0,0,0];                                                       % RGB color of reconstructed fresco (in [0,1]^3)
+        purge_dataset               = true;                                                          % Enables/disables destruction of previous version of dataset (true or false)
+        idx_color                   = 'white';                                                       % Color of fragment index in reconstructed fresco (string or [0,1]^3)
+        neighbors_color             = 'cyan';                                                        % Color of neighboring relationships between fragments in reconstructed fresco (string or [0,1]^3)
 
         % We set the seed for pseudo random number generation. simdTwister algorithm is used for 
-        % reproductibility (same sequence of random numbers will be obtained on different machines)
+        % reproducibility (same sequence of random numbers will be obtained on different machines)
         if seed<0
             rng('shuffle', 'simdTwister');
         else
@@ -71,27 +72,23 @@ function generate_dataset()
             % Message
             disp(sprintf('+ %s (%d/%d)', fresco_name, i, numel(input_frescoes_fns)));
 
-            % We load fresco image
+            % We load fresco image and get its size
             [im_fresco_color,~] = load_image(input_frescoes_fns{i}, grayscale_conversion);
+            fresco_size         = size(im_fresco_color,[1,2]);
 
-            if size(im_fresco_color,3)>1
-                im_fresco_gray = rgb2gray(im_fresco_color);
-            else
-                im_fresco_gray = im_fresco_color;
-            end
-
-            fresco_size = [size(im_fresco_color,1),size(im_fresco_color,2)];
+            % We save a copy of the fresco image
             imwrite(im_fresco_color, [fresco_dir filesep fresco_name '.png'], 'Alpha', uint8(255*ones(fresco_size)));
 
-            % We loop over degradation rates
-            for j=1:numel(fresco_degradation_rates)
-                degradation_rate = fresco_degradation_rates(j);
+            % We simulate degradations over the fresco image
+            noise_std              = 0.0; % Standard deviation of Gaussian noise
+            [~,~,im_fresco_alphas] = simulate_fresco_degradations(im_fresco_color, noise_std, fresco_missing_parts_rates, fresco_missing_parts_params);
 
-                % We simulate degraded parts onto the fresco image
-                im_fresco_alpha = get_degraded_fresco_parts(im_fresco_color, degradation_rate);
+            % We loop over degradation rates
+            for j=1:numel(fresco_missing_parts_rates)
+                missing_part_rate = fresco_missing_parts_rates(j);
 
                 % We save the degraded fresco image
-                imwrite(im_fresco_color, [fresco_dir filesep sprintf('%s_degraded_%d.png', fresco_name, round(100*degradation_rate))], 'Alpha', im_fresco_alpha);
+                imwrite(im_fresco_color, [fresco_dir filesep sprintf('%s_degraded_%d.png', fresco_name, round(100*missing_part_rate))], 'Alpha', im_fresco_alphas(:,:,j));
             end
 
             % We loop over fragment sizes
@@ -134,9 +131,9 @@ function generate_dataset()
                 end
 
                 % We loop over missing fragments rates
-                for l=1:numel(missing_fragments_rates)
+                for l=1:numel(fragments_missing_rates)
                     % Message
-                    missing_rate = missing_fragments_rates(l);
+                    missing_rate = fragments_missing_rates(l);
                     msg(sprintf('    + missing fragment rate=%.2f%%', 100.0*missing_rate), verbose);
 
                     % We discard some proportion of fragments, shuffle the remaining ones
@@ -147,9 +144,9 @@ function generate_dataset()
                     frag_coords2       = frag_coords(rp);
 
                     % We loop over spurious fragments rates
-                    for m=1:numel(spurious_fragments_rates)
+                    for m=1:numel(fragments_spurious_rates)
                         % Message
-                        spurious_rate = spurious_fragments_rates(m);
+                        spurious_rate = fragments_spurious_rates(m);
                         msg(sprintf('      + spurious fragment rate=%.2f%%', 100*spurious_rate), verbose);
 
                         % We add some proportion of spurious fragments
@@ -161,13 +158,13 @@ function generate_dataset()
                             frag_coords3       = frag_coords2;
 
                             for idx=extra_idx
-                                im_frag                 = randomly_extract_region_from_frescoes(all_other_fns, grayscale_conversion, fragment_size);
+                                im_frag                 = randomly_extract_rectangular_patch_from_frescoes(all_other_fns, grayscale_conversion, fragment_size);
                                 im_frags3(idx)          = {im_frag};
                                 frag_translations3(idx) = {[]};
                                 frag_coords3(idx)       = {[]};
                             end
 
-                            % We shuffle fragments again
+                            % We shuffle fragments again to gain randomness
                             nb_frags3          = numel(im_frags3);
                             rp                 = randperm(nb_frags3);
                             im_frags3          = im_frags3(rp);
@@ -191,13 +188,13 @@ function generate_dataset()
                             frag_translations3 = frag_translations2;
                             frag_coords3       = frag_coords2;
                             spurious_idx       = [];
-                            true_idx           = 1:numel(im_frags2);
+                            true_idx           = 1:numel(im_frags3);
                         end
 
                         % We loop over erosion rates
-                        for n=1:numel(erosion_fragments_rates)
+                        for n=1:numel(fragments_erosion_rates)
                             % Message
-                            erosion_rate   = erosion_fragments_rates(n);
+                            erosion_rate   = fragments_erosion_rates(n);
                             erosion_radius = round(min(fresco_size)*erosion_rate);
                             msg(sprintf('        + erosion radius=%d', erosion_radius), verbose);
 
@@ -217,12 +214,12 @@ function generate_dataset()
                             mkdir(frags_dir);
 
                             % We save the parameters used for generating fragment images
-                            save_gen_parameters({'fragment_size', 'missing_rate', 'spurious_rate', 'nearby_frags_gap'}, ...
+                            save_gen_parameters({'fragment_size', 'missing_rate', 'spurious_rate', 'mean_frags_gap'}, ...
                                                 {uint32(fragment_size(1)), double(missing_rate*100), double(spurious_rate*100), double(2*erosion_radius)}, ...
                                                 parameters_fn);
 
                             % We save the set of rotated and eroded fragment images
-                            [im_frags4,frag_angles] = save_fragments_images(im_frags3, erosion_radius, use_rotated_fragments, angles_list, fragment_size, frags_dir);
+                            [im_frags4,frag_angles] = save_rectangular_fragments_images(im_frags3, erosion_radius, use_rotated_fragments, angles_list, fragment_size, frags_dir);
 
                             % We save the list of true fragment coordinates
                             save_true_fragments_parameters(frag_translations3, frag_angles, true_idx, true_frags_fn);

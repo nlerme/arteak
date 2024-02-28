@@ -274,7 +274,9 @@ function [g_new_frags_sol,g_new_im_rec_color,g_new_im_rec_alpha,g_new_im_rec_fil
         % We get the reconstructed frescoes
         interpolation_type                         = get_parameter_value(g_general_parameters, 'interpolation_type');
         background_color                           = get_parameter_value(g_general_parameters, 'background_color');
-        [g_new_im_rec_filled,~,g_new_im_rec_color] = get_reconstructed_fresco(g_mydata.im_fresco_color, g_mydata.frags_infos, g_new_frags_sol, interpolation_type, background_color);
+        fresco_size                                = size(g_mydata.im_fresco_color, [1,2]);
+        nb_channels                                = size(g_mydata.im_fresco_color, 3);
+        [g_new_im_rec_filled,~,g_new_im_rec_color] = get_reconstructed_fresco(fresco_size, nb_channels, g_mydata.frags_infos, g_new_frags_sol, interpolation_type, background_color);
         imwrite(g_new_im_rec_color, [results_dir filesep 'final_rec_color.png'], 'Alpha', g_new_im_rec_alpha);
 
         % We save the reconstructed fresco image and fragments

@@ -5,7 +5,7 @@
 %   * new_frags_sol:       new solution composed of fragments ([non empty] cell array)
 %   * general_parameters:  value of general parameters (non empty cell array)
 %   * mpp_parameters:      value of MPP parameters (non empty cell array)
-%   * frags_gt:               ground truth ([non empty] cell array)
+%   * frags_gt:            ground truth ([non empty] cell array)
 % 
 % Outputs:
 %   * best_frags_sol:  best subset of fragments (cell array)

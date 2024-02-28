@@ -10,10 +10,10 @@ function varargout = arteak_gui( varargin )
 
     % We define global variables with their default value
     g_mydata                          = struct();
-    g_mydata.arteak_version           = 'v0.0.1 - 23/11/2022';
+    g_mydata.arteak_version           = 'v0.1 - 27/02/2024';
     g_mydata.software_url             = 'https://nicolaslerme.fr/';
     g_mydata.datasets_url             = 'https://vision.unipv.it/DAFchallenge/DAFNE_dataset/dataset_download.html';
-    g_mydata.data_root_dir            = ['..' filesep '..' filesep 'data' filesep 'irregular'];
+    g_mydata.data_root_dir            = ['..' filesep '..' filesep 'data' filesep 'irregular2'];
     g_mydata.pics_dir                 = ['pics'];
     g_mydata.banner_fn                = [g_mydata.pics_dir filesep 'banner.png'];
     g_mydata.frags_dir                = 'frag_eroded';
@@ -1281,7 +1281,7 @@ function varargout = arteak_gui( varargin )
 
                 if isnumeric(value)
                     str = strvcat(str,sprintf('* %s: %f', fns{k}, value));
-                elseif isstring(value)
+                elseif ischar(value)
                     str = strvcat(str,sprintf('* %s: %s', fns{k}, value));
                 else
                     str = strvcat(str,sprintf('* %s: ???', fns{k}, value));
@@ -1301,7 +1301,7 @@ function varargout = arteak_gui( varargin )
 
         % We display the needed information
         if isempty(g_mydata.geometric_constraints.locations)
-            str = 'The list of constrained locations is empty.';
+            str = 'No constraints found for locations of fragments.';
         else
             str = 'The list of constrained locations is as follows (in pixels):';
 
@@ -1311,7 +1311,7 @@ function varargout = arteak_gui( varargin )
         end
 
         if isempty(g_mydata.geometric_constraints.orientations)
-            str = strvcat(str, 'The list of constrained orientations is empty.');
+            str = strvcat(str, 'No constraints found for orientations of fragments.');
         else
             str = strvcat(str, 'The list of constrained orientations is as follows (in degrees):');
 
@@ -1471,7 +1471,9 @@ function varargout = arteak_gui( varargin )
             end
 
             % We build the reconstructed fresco and add it to the list
-            [im_rec_gray,~,im_rec_color] = get_reconstructed_fresco(g_mydata.im_fresco_color, g_mydata.frags_infos, frags_sol, ...
+            fresco_size                  = size(g_mydata.im_fresco_color, [1,2]);
+            nb_channels                  = size(g_mydata.im_fresco_color, 3);
+            [im_rec_gray,~,im_rec_color] = get_reconstructed_fresco(fresco_size, nb_channels, g_mydata.frags_infos, frags_sol, ...
                                                                     g_mydata.interpolation_type, g_mydata.recs_background_color);
             g_mydata.im_recs_color       = {g_mydata.im_recs_color{:},im_rec_color};
             g_mydata.im_recs_alpha       = {g_mydata.im_recs_alpha{:},g_mydata.im_fresco_alpha};

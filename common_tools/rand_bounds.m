@@ -1,8 +1,8 @@
-% Function returning a real random number between lower and upper bounds
+% Function returning a random real number between lower and upper bounds.
 % 
 % Inputs:
-%   * lb:  lower bound
-%   * ub:  upper bound
+%   * lb:  lower bound(s)
+%   * ub:  upper bound(s)
 % 
 % Outputs:
 %   * result:  pseudo randomly generated real number in [lb,ub]

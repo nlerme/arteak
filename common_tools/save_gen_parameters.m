@@ -22,14 +22,29 @@ function save_gen_parameters( parameters_names, parameters_values, filename )
 
     % We write values into the text file
     for k=1:numel(parameters_names)
-        if isfloat(parameters_values{k})
-            fprintf(fp, '%s %f\n', parameters_names{k}, parameters_values{k});
-        elseif isinteger(parameters_values{k})
-            fprintf(fp, '%s %d\n', parameters_names{k}, parameters_values{k});
-        elseif isstring(parameters_values{k})
-            fprintf(fp, '%s %s\n', parameters_names{k}, parameters_values{k});
-        else
-            error('unknown data type');
+        name  = parameters_names{k};
+        value = parameters_values{k};
+
+        if isfloat(value)
+            fprintf(fp, '%s %f\n', name, value);
+        elseif isinteger(value)
+            fprintf(fp, '%s %d\n', name, value);
+        elseif ischar(value)
+            fprintf(fp, '%s %s\n', name, value);
+        elseif isstruct(value)
+            fns = fieldnames(value);
+            for i=1:numel(fns)
+                value2 = getfield(value, fns{i});
+                if isfloat(value2)
+                    fprintf(fp, '%s %f\n', fns{i}, value2);
+                elseif isinteger(value2)
+                    fprintf(fp, '%s %d\n', fns{i}, value2);
+                elseif ischar(value2)
+                    fprintf(fp, '%s %s\n', fns{i}, value2);
+                else
+                    error('unknown data type');
+                end
+            end
         end
     end
 

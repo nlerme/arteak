@@ -1,4 +1,5 @@
-% This function modifies an existing dataset with fragments of irregular shape
+% This function creates a new dataset with fragments of irregular shape
+% from an existing one.
 function generate_dataset()
     % We run the main function
     main();
@@ -48,7 +49,6 @@ function generate_dataset()
         end
 
         parfor i=1:numel(frescoes_dirs)
-        %for i=2
             % We extract name of current fresco directory
             fresco_dir = split(frescoes_dirs{i}, filesep);
             fresco_dir = fresco_dir{end};
@@ -68,7 +68,8 @@ function generate_dataset()
 
             % We load fresco image
             [im_fresco_color,~] = load_image(fresco_fn, false);
-            fresco_size         = [size(im_fresco_color,1),size(im_fresco_color,2)];
+            fresco_size         = size(im_fresco_color, [1,2]);
+            nb_channels         = size(im_fresco_color, 3);
 
             % We loop over degradation rates
             for j=1:numel(fresco_degradation_rates)
@@ -146,13 +147,13 @@ function generate_dataset()
                 end
 
                 % Given fragment images and their transformation parameters, we reconstruct the fresco
-                [im_rec_gray,~,im_rec_color] = get_reconstructed_fresco(im_fresco_color, frags_infos, frags_sol, interpolation_type, background_color);
+                [im_rec_gray,~,im_rec_color] = get_reconstructed_fresco(fresco_size, nb_channels, frags_infos, frags_sol, interpolation_type, background_color);
 
-                % Given reconstructed fresco, we both estimate neighboring relationships between nearby fragments as well as their distance
-                [ifd,frags_sol] = get_nearby_fragments_estimates(im_rec_gray, frags_sol);
+                % Given reconstructed fresco, we both estimate neighboring relationships between close fragments as well as their distance
+                [ifd,frags_sol] = estimate_fragments_gap(im_rec_gray, frags_sol);
 
                 % We save the parameters used for generating fragment images
-                save_gen_parameters({'nearby_frags_gap'}, {double(ifd)}, parameters_fn);
+                save_gen_parameters({'mean_frags_gap'}, {double(ifd)}, parameters_fn);
 
                 % We save the file constraining the placement of fragment images
                 save_geometric_constraints(struct('locations', [], 'orientations', []), constraints_fn);

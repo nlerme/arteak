@@ -1,10 +1,11 @@
-% This function returns a structure containing fragments and their relationships with nearby ones.
+% This function returns a structure containing fragments and their 
+% relationships with adjacent ones.
 % 
 % Inputs:
 %   * frag_coords:        2D indexes of fragments (cell array)
 %   * frag_translations:  2D translation vectors (cell array)
 %   * frag_angles:        angles of rotation (cell array)
-%   * true_idx:           indexes of fragments belonging to the solution (array)
+%   * true_idx:           indexes of fragments belonging to the ground truth (array)
 % 
 % Outputs:
 %   * frags_sol:  solution composed of fragments (cell array)
@@ -15,10 +16,9 @@ function frags_sol = get_fragments( frag_coords, frag_translations, frag_angles,
         return;
     end
 
-    % We create an empty symmetric matrix
+    % We loop over true fragments
     frags_sol = cell(1,numel(true_idx));
 
-    % We loop over elements of the matrix
     for i=1:numel(true_idx)
         idx          = true_idx(i);
         translation  = frag_translations(idx);

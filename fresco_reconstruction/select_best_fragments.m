@@ -1,12 +1,11 @@
 % Function returning the best subset of fragments using multi-bales graph cuts.
 % 
 % Inputs:
-%   * im_fresco:           fresco image (RGBA image)
-%   * frags_infos:         collection of fragments (cell array with RGBA images)
 %   * current_frags_sol:   current solution composed of fragments ([non empty] cell array)
 %   * new_frags_sol:       new solution composed of fragments ([non empty] cell array)
 %   * general_parameters:  value of general parameters (non empty cell array)
 %   * mpp_parameters:      value of MPP parameters (non empty cell array)
+%   * frags_gt:            ground truth (cell array)
 % 
 % Outputs:
 %   * best_frags_sol:  best subset of fragments (cell array) 
@@ -141,7 +140,7 @@ function [best_frags_sol,energy,nb_colors] = select_best_fragments( current_frag
     nodes_idx = cellfun(@(x) x.color_idx, all_frags_sol);
     %-------- For debugging --------
     %disp(sprintf('number of colors found -> %d', nb_colors));
-    %[~,im_bnd_frags,~] = get_reconstructed_fresco(im_fresco, frags_infos, all_frags, 'nearest', [0,0,0]);
+    %[~,im_bnd_frags,~] = get_reconstructed_fresco(fresco_size, nb_channels, frags_infos, all_frags, 'nearest', [0,0,0]);
     %show_reconstructed_fresco(im_bnd_frags, all_frags, [], [], [], [], [], false, false, true, true, 'on');
     %-------------------------------
 

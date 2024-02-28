@@ -13,6 +13,6 @@ function im_result = extend_image_borders( im_frag_alpha, im_frag_color )
     for k=1:size(im_result,3)
         im_tmp                   = im_frag_color(:,:,k);
         im_tmp(im_frag_alpha==0) = 0;
-        im_result(:,:,k)            = im_tmp(im_idx);
+        im_result(:,:,k)         = im_tmp(im_idx);
     end
 end

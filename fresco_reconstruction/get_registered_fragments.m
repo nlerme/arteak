@@ -111,7 +111,7 @@ function output_frags = get_registered_fragments( im_fresco, im_fresco_grad_x, i
             tmp{i}.translation = xk_new(i,1:2);
             tmp{i}.angle       = xk_new(i,3);
         end
-        [~,~,im_result] = get_reconstructed_fresco(im_fresco, frags_infos, tmp, interpolation_type, [0]);
+        [~,~,im_result] = get_reconstructed_fresco(size(im_fresco,[1,2]), size(im_fresco,3), frags_infos, tmp, interpolation_type, [0]);
         imwrite(im_result, sprintf('fresque_recalee_%04d.png', iteration));
         %------------------------------------
 
