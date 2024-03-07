@@ -14,7 +14,7 @@ function varargout = arteak_gui( varargin )
     g_mydata.software_url             = 'https://nicolaslerme.fr/';
     g_mydata.datasets_url             = 'https://vision.unipv.it/DAFchallenge/DAFNE_dataset/dataset_download.html';
     g_mydata.data_root_dir            = ['..' filesep '..' filesep 'data' filesep 'simulated' filesep 'irregular_dafne2'];
-    g_mydata.pics_dir                 = ['pics'];
+    g_mydata.pics_dir                 = 'pics';
     g_mydata.banner_fn                = [g_mydata.pics_dir filesep 'banner.png'];
     g_mydata.frags_dir                = 'frag_eroded';
     g_mydata.true_frags_fn            = 'fragments.txt';
@@ -22,7 +22,7 @@ function varargout = arteak_gui( varargin )
     g_mydata.neighbors_frags_fn       = 'neighbors.txt';
     g_mydata.gen_parameters_fn        = 'gen_parameters.txt';
     g_mydata.geometric_constraints_fn = 'geometric_constraints.txt';
-    g_mydata.results_root_dir         = ['..' filesep 'results'];
+    g_mydata.results_root_dir         = ['..' filesep '..' filesep 'results'];
     g_mydata.colormap                 = get_colormap();
     g_mydata.current_fresco_dir       = [];
     g_mydata.current_frags_dir        = [];
@@ -96,13 +96,6 @@ function varargout = arteak_gui( varargin )
     % We create the results directory if needed
     if ~isfolder(g_mydata.results_root_dir)
         mkdir(g_mydata.results_root_dir);
-    else
-        answer = questiondlg(sprintf('Results directory %s found. Delete it?', g_mydata.results_root_dir), 'ARTEAK WARNING', 'Yes', 'No'));
-
-        if strcmp(answer, 'Yes')
-            %rmdir(g_mydata.results_root_dir, 's');
-            disp('[ deleting results root directory ]');
-        end
     end
 
     % We load session variables (if present)
@@ -166,6 +159,15 @@ function varargout = arteak_gui( varargin )
                            'Accelerator', 'Q', ...
                            'label', 'Quit', ...
                            'callback', @quit_callback);
+
+    g_h_edit_menu = uimenu('parent', g_fh_main, ...
+                           'handlevisibility', 'callback', ...
+                           'label', 'Edit');
+
+    g_h_edit_preferences_item = uimenu('parent', g_h_edit_menu, ...
+                                    'handlevisibility', 'callback', ...
+                                    'label', 'Preferences', ...
+                                    'callback', @edit_preferences_callback);
 
     g_h_help_menu = uimenu('parent', g_fh_main, ...
                            'handlevisibility', 'callback', ...
@@ -992,7 +994,7 @@ function varargout = arteak_gui( varargin )
         pbh = waitbar(0, 'Please wait while loading fragment images');
 
         % We get the list of fragment image filenames
-        filenames = get_matching_files(directory{1}, '.*\.png');
+        filenames = get_matching_files(directory{1}, '.*\.(png|tif|jpg)');
 
         for k=1:numel(filenames)
             [~,fresco_name,~] = fileparts(filenames{k});
@@ -1992,7 +1994,7 @@ function varargout = arteak_gui( varargin )
             im_view = frame2im(f);
 
             % We ask for filename to save
-            [filename,directory] = uiputfile({'*.png'}, 'Save view as image file', 'view.png');
+            [filename,directory] = uiputfile({'*.png';'*.jpg';'*.tif'}, 'Save view as image file', 'view.png');
 
             % We save view as image file
             if ~isequal(filename,0) && ~isequal(directory,0)
@@ -2009,12 +2011,23 @@ function varargout = arteak_gui( varargin )
         save_session_variables();
     end
 
-    function help_software_callback( h_object, event_data )
+    function edit_preferences_callback( h_object, event_data )
         % We load GUI data
         g_mydata = guidata(g_fh_main);
 
         % We open the webpage of the software
         web(g_mydata.software_url);
+
+        % We save GUI data
+        guidata(g_fh_main, g_mydata);
+    end
+
+    function help_software_callback( h_object, event_data )
+        % We load GUI data
+        g_mydata = guidata(g_fh_main);
+
+        % We open the preferences subwindow
+        %arteak_preferences(g_fh_main);
 
         % We save GUI data
         guidata(g_fh_main, g_mydata);

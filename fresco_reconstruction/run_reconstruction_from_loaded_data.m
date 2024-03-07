@@ -52,7 +52,7 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
         ttt = tic;
 
         % We loop over fragment images and preprocess them
-        mean_frags_gap  = gen_parameters.mean_frags_gap;
+        mean_frags_gap    = gen_parameters.mean_frags_gap;
         final_frags_infos = cell(1, numel(frags_infos));
 
         parfor k=1:numel(final_frags_infos)
@@ -98,7 +98,8 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             im_frag_alpha_d = imdilate(im_frag_alpha, strel('disk', round(extrapolation_distance), 0));
 
             % We do extrapolation on grayscale fragment image
-            im_frag_color_ext          = im2double(inpaintExemplar(im_frag_color, ~im_frag_alpha, 'FillOrder', 'tensor', 'PatchSize', [5,5]));
+            %im_frag_color_ext          = im2double(inpaintExemplar(im_frag_color, ~im_frag_alpha, 'FillOrder', 'tensor', 'PatchSize', [5,5]));
+            im_frag_color_ext          = im_frag_color;
             im_frag_gray_ext           = rgb2gray(im_frag_color_ext);
             im_frag_gray               = im2double(rgb2gray(im_frag_color));
             frag_idx                   = find(im_frag_alpha_d==0);
@@ -335,17 +336,17 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             imwrite(im_init_rec_bnd, [results_dir filesep 'init_rec_bnd.png']);
             imwrite(im_init_rec_color, [results_dir filesep 'init_rec_color.png']);
 
-            fh = show_reconstructed_fresco(im_init_rec_color, init_frags_sol, tp, fp, tn, fn, ina, false, false, false, false, true, show_figures);
-            fn = [results_dir filesep 'init_rec_color_n.png'];
-            saveas(fh, fn);
-            system(sprintf('mogrify -trim %s', fn));
-            close(fh);
+            %fh = show_reconstructed_fresco(im_init_rec_color, init_frags_sol, tp, fp, tn, fn, ina, false, false, false, false, true, show_figures);
+            %fn = [results_dir filesep 'init_rec_color_n.png'];
+            %saveas(fh, fn);
+            %system(sprintf('mogrify -trim %s', fn));
+            %close(fh);
 
-            fh = show_reconstructed_fresco(im_init_rec_bnd, init_frags_sol, tp, fp, tn, fn, ina, false, false, false, false, true, show_figures);
-            fn = [results_dir filesep 'init_rec_bnd_n.png'];
-            saveas(fh, fn);
-            system(sprintf('mogrify -trim %s', fn));
-            close(fh);
+            %fh = show_reconstructed_fresco(im_init_rec_bnd, init_frags_sol, tp, fp, tn, fn, ina, false, false, false, false, true, show_figures);
+            %fn = [results_dir filesep 'init_rec_bnd_n.png'];
+            %saveas(fh, fn);
+            %system(sprintf('mogrify -trim %s', fn));
+            %close(fh);
 
             % MAT file
             save(init_data_fn, 'init_frags_sol', 'init_time', '-v7.3');
@@ -355,6 +356,8 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
         msg(sprintf('+ loading initialization'), verbose);
         load(init_data_fn, 'init_frags_sol', 'init_time');
     end
+
+    return;
 
     %----------------------------------------------------------------------
     %----------------------------------------------------------------------

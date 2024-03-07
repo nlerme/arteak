@@ -15,6 +15,7 @@
 %   * frags_sol:  solution composed of fragments (cell array)
 function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fresco_alpha, frags_infos, general_parameters, init_parameters, gen_parameters, geometric_constraints, frags_gt, verbose )
     % We initialize variables
+    background_color            = get_parameter_value(general_parameters, 'background_color');
     interpolation_type          = get_parameter_value(general_parameters, 'interpolation_type');
     verbose                     = get_parameter_value(general_parameters, 'verbose');
     results_dir                 = get_parameter_value(general_parameters, 'results_dir');
@@ -22,7 +23,8 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
     fragments_overlap_tolerance = get_parameter_value(init_parameters, 'fragments_overlap_tolerance');
     max_cover_rate              = get_parameter_value(init_parameters, 'max_cover_rate');
     frags_sol                   = {};
-    fresco_size                 = size(im_fresco_alpha);
+    fresco_size                 = size(im_fresco_color, [1,2]);
+    nb_channels                 = size(im_fresco_color, 3);
     fresco_nb_pixels            = numel(im_fresco_alpha);
 
     if ~isempty(geometric_constraints.locations) && ~isempty(geometric_constraints.orientations)
@@ -176,7 +178,7 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
                                         im_frag_color, im_inner_circle, ic_radius_t, color_matching_nb_rectangles);
 
             % We binarize the grayscale confidence map
-            im_map2 = binarize_confidence_map(im_map, color_matching_threshold, color_matching_dilation_radius);
+            im_map2 = binarize_confidence_map(im_map, color_matching_threshold*max(im_map(:)), color_matching_dilation_radius);
 
             % We keep track of cover rate for current fragment
             frag_cover_rate    = sum(im_map2(:))/fresco_nb_pixels*100.0;
@@ -250,6 +252,13 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
         [fresco_points2,fresco_features] = filter_keypoints_and_features(im_fresco_mask2, fresco_points2, fresco_features);
         fresco_points2.Location          = fresco_points2.Location-features_matching_fresco_padding;
 
+        %--- debug ---
+        %figure, imshow(im_fresco_gray,[]);
+        %hold on;
+        %plot(fresco_points2);
+        %hold off;
+        %-------------
+
         % We detect and extract features on fragments
         msg('    + detection/extraction of fragment features', verbose);
         results = cell(1,numel(frags_infos));
@@ -268,6 +277,12 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
             % We detect features
             frag_points = detectFASTFeatures(im_frag_gray2, 'MinContrast', features_detection_threshold1, 'MinQuality', features_detection_threshold2);
 
+            %--- debug ---
+            %figure, imshow(im_frag_gray,[]);
+            %hold on;
+            %plot(frag_points.selectStrongest(1000));
+            %-------------
+
             % We extract features
             [frag_features,frag_points2] = extractFeatures(im_frag_gray2, frag_points, 'method', features_extraction_method);
 
@@ -280,10 +295,10 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
                 continue;
             end
 
-            %------ For debugging ------
+            %--- debug ---
             %figure, imshow(frag_info.color,[]); hold on; plot(frag_points2); hold off;
             %figure, imshow(frag_info.color,[]); hold on; plot(fresco_points2); hold off;
-            %---------------------------
+            %-------------
 
             % We get the inner and outer circles
             outer_circle_radius = frag_info.outer_circle_radius;
@@ -291,13 +306,13 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
             inner_circle_radius = frag_info.inner_circle_radius;
             inner_circle_center = frag_info.inner_circle_center;
 
-            % We load and binarize the confidence map
-            im_map = im2double(imread([results_dir filesep sprintf('confidence_map_%04d.jpg', k)]));
-            im_map = binarize_confidence_map(im_map, color_matching_threshold*max(im_map(:)), color_matching_dilation_radius);
+            % We load, binarize and dilate the confidence map
+            im_map          = im2double(imread([results_dir filesep sprintf('confidence_map_%04d.jpg', k)]));
+            im_map          = binarize_confidence_map(im_map, color_matching_threshold*max(im_map(:)), color_matching_dilation_radius);
+            dilation_radius = round(double(features_matching_dilation_rate*0.5*(outer_circle_radius-inner_circle_radius+norm(outer_circle_center-inner_circle_center))));
+            im_map          = imdilate(im_map, strel('square', 2*dilation_radius+1));
 
             % We filter both keypoints and features using the dilated confidence map
-            dilation_radius                      = round(double(features_matching_dilation_rate*0.5*(outer_circle_radius-inner_circle_radius+norm(outer_circle_center-inner_circle_center))));
-            im_map                               = imdilate(im_map, strel('square', 2*dilation_radius+1));
             [fresco_points2_f,fresco_features_f] = filter_keypoints_and_features(im_map, fresco_points2, fresco_features);
 
             % We check if there are enough features
@@ -311,12 +326,10 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
             fresco_points3 = fresco_points2_f(index_pairs(:, 1), :);
             frag_points3   = frag_points2_f(index_pairs(:, 2), :);
 
-            %------ For debugging ------
+            %--- debug ---
             %figure, imshow(frag_info.color,[]); hold on; plot(frag_points3); hold off;
-            %if k==17
-            %    figure, showMatchedFeatures(im_fresco_color, frag_info.color, fresco_points3, frag_points3);
-            %end
-            %---------------------------
+            %figure, showMatchedFeatures(im_fresco_color, frag_info.color, fresco_points3, frag_points3);
+            %-------------
 
             % We estimate the (rigid) geometric transform
             if ~verbose
@@ -434,6 +447,10 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
                 break;
             end
         end
+
+        %[~,~,im_rec_color] = get_reconstructed_fresco(fresco_size, nb_channels, frags_infos, frags_sol, interpolation_type, background_color);
+        %figure, imshow(im_rec_color,[]);
+        %figure, imshow(im_fresco_color, []);
 
 %         % Evaluation w.r.t. ground truth
 %         if isempty(frags_gt)

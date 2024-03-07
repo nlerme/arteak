@@ -3,25 +3,14 @@ Presentation
 ARTEAK is a research project aiming at recovering the optimal spatial organization of a damaged fresco from its original elements with or without a picture of the fresco. 
 This problem is very challenging because of local aspects (elements must locally match with each other) but also global aspects (the reassembled elements must depict a picture 
 making sense). The main application of this problem concerns the reconstruction of artworks in cultural heritage and archaeology. It is of great importance to to improve the 
-understanding and the conservation of artworks.
+understanding and the conservation of artworks. The software related to this project is distributed under LGPL license but only for research purposes. It has been the subject 
+of published papers (see [2,3,4]), tested on simulated [1] and real data. The available software involves different parts:
 
-The software related to this project is distributed under LGPL license but only for research purposes. It has been heavily tested on a large dataset with simulated 
-fragmented frescoes [1]. This software involves 6 distinct different packages:
-
-* **fresco_reconstruction** : scripts for running automatic fresco reconstruction
-* **graphical_user_interface** : interface for handling fresco reconstructions
-* **common_tools** : mandatory dependencies
-* **regular_fragments_generation** : script for generating a dataset derived from [1] with fragments of regular shape.
-* **irregular_fragments_generation_piercarlo** : script for generating a dataset derived from [1] with fragments of irregular shape.
-* **irregular_fragments_generation_nicolas** : script for generating a dataset with fragments of irregular shape.
-
-The fresco reconstruction is based on Marked point processes and solved with an algorithm alternating sampling, fragments selection and fragments placement until convergence [3]. 
-The algorithm is initialized with [2] or exhaustive, depending on the availability of the fresco model. The sampling step is performed using machine learning. The fragments 
-placement step is performed in the continuous domain using gradient descent. Finally, the fragments selection step is performed in the discrete domain using graph cuts [4,5,6].
-
-An example of execution of the graphical user interface is shown below:
-
-![Screenshot](https://i.ibb.co/8PvF9Lm/screenshot.png)
+* **common_tools** : software dependencies
+* **fresco_reconstruction** : software for automatically reconstructing frescoes.
+* **graphical_user_interface** : GUI handling fresco reconstructions.
+* **real_frescoes_processing** : software for generating datasets from real data.
+* **simulated_frescoes_generation** : software for generating simulated datasets with fragments.
 
 References
 ----------
@@ -31,8 +20,4 @@ References
 
 [3] Automatic Reconstruction of Digitized Frescoes, N. Lermé, S. Le Hégarat-Mascle, F. Malgouyres, G. Alkan. Preprint, 2022.
 
-[4] Efficient Approximate Energy Minimization via Graph Cuts. Y. Boykov, O. Veksler, R.Zabih. IEEE Transactions on Pattern Analysis and Machine Intelligence, 20(12):1222-1239, 2001.
-
-[5] What Energy Functions can be Minimized via Graph Cuts? V. Kolmogorov, R.Zabih. IEEE Transactions on Pattern Analysis and Machine Intelligence, 26(2):147-159, 2004. 
-
-[6] An Experimental Comparison of Min-Cut/Max-Flow Algorithms for Energy Minimization in Vision. Y. Boykov, V. Kolmogorov. IEEE Transactions on Pattern Analysis and Machine Intelligence, 26(9):1124-1137, 2004.
+[4] Solving Jigsaw Puzzles With Vision Transformers. G. Heck, N. Lermé, S. Le Hégarat-Mascle. Pattern Analysis And Applications. Preprint, 2024.

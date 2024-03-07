@@ -15,10 +15,10 @@ function run_reconstructions()
         clc;
 
         % -----------------------------------------------------------------
-        seed             = 1; % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
-        results_root_dir = ['..' filesep '..' filesep 'results' filesep 'tests'];
-        data_root_dir    = ['..' filesep '..' filesep 'data' filesep 'simulated' filesep 'regular'];
-        degradation_rate = 0; % degradation level of the fresco image (in {0,...,100})
+        seed                   = 1; % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
+        results_root_dir       = ['..' filesep '..' filesep 'results' filesep 'tests'];
+        data_root_dir          = ['..' filesep '..' filesep 'data' filesep 'real' filesep 'output'];
+        fresco_model_fn_suffix = '';
         %------------------------------------------------------------------
 
         % We add required paths recursively
@@ -41,6 +41,9 @@ function run_reconstructions()
         end
 
         %------------------------------------------------------------------
+
+        %fresco_name = 'fresco1';
+        %config_name = '';
 
         %fresco_name = 'Lanzani_SantAntonioproteggePavia_2440x2524';
         %config_name = [fresco_name '_2019-2-20_17.26.13'];
@@ -69,9 +72,9 @@ function run_reconstructions()
         %config_name = [fresco_name '_71_0_0_2'];
         %config_name = [fresco_name '_175_0_0_2'];
 
-        fresco_name = 'PierodellaFrancesca_Resurrezione_730x826';
+        %fresco_name = 'PierodellaFrancesca_Resurrezione_730x826';
         %config_name = [fresco_name '_73_0_0_0'];
-        config_name = [fresco_name '_183_0_0_0'];
+        %config_name = [fresco_name '_183_0_0_0'];
         %config_name = [fresco_name '_2019-2-28_13.55.54'];
         %config_name = [fresco_name '_2019-2-28_13.56.15'];
         %config_name = [fresco_name '_2019-2-28_13.56.3'];
@@ -86,7 +89,7 @@ function run_reconstructions()
         %config_name = [fresco_name '_85_0_0_0'];
         %config_name = [fresco_name '_2019-2-15_17.29.20'];
 
-        run_reconstruction(data_root_dir, fresco_name, config_name, results_root_dir, degradation_rate);
+        run_reconstruction(data_root_dir, fresco_name, config_name, results_root_dir, fresco_model_fn_suffix);
 
         %--------------
 
@@ -100,20 +103,29 @@ function run_reconstructions()
 %                 a = split(dirs2{j}, filesep);
 %                 config_name = a{end};
 %                 disp(sprintf('  + %s (%d/%d)', config_name, j, numel(dirs2)));
-%                 run_reconstruction(data_root_dir, fresco_name, config_name, results_root_dir, degradation_rate);
+%                 run_reconstruction(data_root_dir, fresco_name, config_name, results_root_dir, fresco_model_fn_suffix);
 %             end
 %         end
         %------------------------------------------------------------------
     end
 
-    function run_reconstruction( data_root_dir, fresco_name, config_name, results_root_dir, degradation_rate )
+    function run_reconstruction( data_root_dir, fresco_name, config_name, results_root_dir, fresco_model_fn_suffix )
         % We set directory and file names
-        fresco_dir    = [data_root_dir filesep fresco_name];
-        config_dir    = [fresco_dir filesep config_name];
-        frags_dir     = [config_dir filesep 'frag_eroded'];
-        geo_csts_fn   = [frags_dir filesep 'geometric_constraints.txt'];
-        gen_params_fn = [frags_dir filesep 'gen_parameters.txt'];
-        results_dir   = [results_root_dir filesep fresco_name filesep config_name '_' num2str(degradation_rate)];
+        fresco_dir = [data_root_dir filesep fresco_name];
+
+        if ~isempty(config_name)
+            config_dir    = [fresco_dir filesep config_name];
+            frags_dir     = [config_dir filesep 'frag_eroded'];
+            geo_csts_fn   = [frags_dir filesep 'geometric_constraints.txt'];
+            gen_params_fn = [frags_dir filesep 'gen_parameters.txt'];
+            results_dir   = [results_root_dir filesep fresco_name filesep config_name fresco_model_fn_suffix];
+        else
+            config_dir    = fresco_dir;
+            frags_dir     = [config_dir filesep 'frag_eroded'];
+            geo_csts_fn   = [frags_dir filesep 'geometric_constraints.txt'];
+            gen_params_fn = [frags_dir filesep 'gen_parameters.txt'];
+            results_dir   = [results_root_dir filesep fresco_name fresco_model_fn_suffix];
+        end
 
         %------------------------------------------------------------------
 
@@ -123,7 +135,7 @@ function run_reconstructions()
         recompute_preprocessing   = true;      % Boolean indicating if preprocessing step is recomputed or loaded (true or false)
         save_intermediate_results = true;       % Enables/disables saving of intermediate results (true or false)
         save_ground_truth_results = true;       % Enables/disables saving of ground truth results (true or false)
-        interpolation_type        = 'bilinear'; % Type of interpolation used for geometrical transform of fragments (non empty string)
+        interpolation_type        = 'bilinear'; % Type of interpolation used for geometrical transform of fragments (nearest, bilinear, bicubic, etc.)
         translation_tolerance     = 10.0;       % Tolerance in translation in pixels (>=0)
         angle_tolerance           = 5.0;        % Tolerance in rotation in degrees (in [0,360])
         background_color          = [0,0,0];    % Background color of reconstructed fresco (in {0,...,255}^3)
@@ -157,6 +169,11 @@ function run_reconstructions()
         color_matching_threshold           = 0.8;     % Threshold for extracting matched regions (in [0,1])
         max_cover_rate                     = 1.0;     % Maximum cover rate of fragments during sampling step (in [0,1])
 
+        %--- parameters tuning for real data ---
+        %color_matching_nb_bins_per_channel = 4
+        %color_matching_threshold = 0.5
+        %---------------------------------------
+
         init_parameters = {struct('name', 'recompute_init', 'value', recompute_init), ...
                            struct('name', 'outside_fragment_tolerance', 'value', outside_fragment_tolerance), ...
                            struct('name', 'fragments_overlap_tolerance', 'value', fragments_overlap_tolerance), ...
@@ -174,18 +191,18 @@ function run_reconstructions()
                            struct('name', 'max_cover_rate', 'value', max_cover_rate)};
 
         % MPP parameters
-        recompute_mpp               = true;  % Boolean indicating if MPP step is recomputed or loaded (true or false)
-        outside_fragment_tolerance  = 5;     % Tolerance parameter controlling if a fragment is outside fresco model or not (in pixels, >=0)
-        fragments_overlap_tolerance = 5;     % Tolerance parameter controlling if two fragments overlap or not (in pixels, >=0)
-        beta_d                      = 1.0;   % Weighting parameter for the term E_d (>=0.0)
-        beta_a                      = 0.01;   % Weighting parameter for the term E_a (>=0.0)
+        recompute_mpp               = true;      % Boolean indicating if MPP step is recomputed or loaded (true or false)
+        outside_fragment_tolerance  = 5;         % Tolerance parameter controlling if a fragment is outside fresco model or not (in pixels, >=0)
+        fragments_overlap_tolerance = 5;         % Tolerance parameter controlling if two fragments overlap or not (in pixels, >=0)
+        beta_d                      = 1.0;       % Weighting parameter for the term E_d (>=0.0)
+        beta_a                      = 0.01;      % Weighting parameter for the term E_a (>=0.0)
         beta_inc                    = 1000000.0; % Weighting parameter for the term E_{inc} (>=0.0)
         beta_c                      = 1000000.0; % Weighting parameter for the term E_c (>=0.0)
         beta_no                     = 1000000.0; % Weighting parameter for the term E_{no} (>=0.0)
-        beta_sf                     = 0.5;  % Weighting parameter for the term E_{sf} (>=0.0)
-        lambda                      = 20.0;  % Slope parameter of psi function (>0)
-        mu                          = -0.995; % Shift parameter of psi function (in [-1,1])
-        nb_iterations               = 1;  % Number of iterations of MPP algorithm (>=1)
+        beta_sf                     = 0.5;       % Weighting parameter for the term E_{sf} (>=0.0)
+        lambda                      = 20.0;      % Slope parameter of psi function (>0)
+        mu                          = -0.995;    % Shift parameter of psi function (in [-1,1])
+        nb_iterations               = 1;         % Number of iterations of MPP algorithm (>=1)
 
         mpp_parameters = {struct('name', 'recompute_mpp', 'value', recompute_mpp), ...
                           struct('name', 'outside_fragment_tolerance', 'value', outside_fragment_tolerance), ...
@@ -203,13 +220,13 @@ function run_reconstructions()
         %------------------------------------------------------------------
 
         % We load the fresco image
-        msg(sprintf('+ loading of fresco image (degradation rate=%d%%)', degradation_rate), verbose);
-        fresco_fn = [fresco_dir filesep fresco_name '_degraded_' num2str(round(degradation_rate)) '.png'];
+        msg('+ loading of fresco image', verbose);
+        fresco_fn = [fresco_dir filesep fresco_name fresco_model_fn_suffix '.png'];
 
         [im_fresco_color,im_fresco_alpha] = load_image(fresco_fn, false);
 
         if isempty(im_fresco_color) || isempty(im_fresco_alpha)
-            error('Unable to load fresco image. Wrong path, missing alpha channel or unavailable degradation rate?');
+            error('Unable to load fresco image. Wrong path or missing alpha channel?');
         end
 
         % We threshold the alpha channel of fresco to limit memory usage
@@ -278,6 +295,7 @@ function run_reconstructions()
         end
 
         % We reconstruct the fresco
-        run_reconstruction_from_loaded_data(im_fresco_color, im_fresco_alpha, frags_infos, general_parameters, init_parameters, mpp_parameters, gen_parameters, geometric_constraints);
+        run_reconstruction_from_loaded_data(im_fresco_color, im_fresco_alpha, frags_infos, general_parameters, ...
+                                            init_parameters, mpp_parameters, gen_parameters, geometric_constraints);
     end
 end

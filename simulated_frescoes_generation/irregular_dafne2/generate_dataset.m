@@ -58,13 +58,18 @@ function generate_dataset()
             rng(seed, 'simdTwister');
         end
 
-        % We create output directory if needed
-        if purge_dataset && isfolder(output_frescoes_dir)
-            rmdir(output_frescoes_dir, 's');
+        % We check if the input directory exists
+        if ~isfolder(input_frescoes_dir)
+            error(sprintf('Unable to find input directory %s', input_frescoes_dir));
         end
 
+        % We create output directory if needed
         if ~isfolder(output_frescoes_dir)
             mkdir(output_frescoes_dir);
+        else
+            if purge_dataset
+                rmdir(output_frescoes_dir, 's');
+            end
         end
 
         % We loop over input fresco filenames
@@ -85,6 +90,10 @@ function generate_dataset()
             [im_fresco_color,~] = load_image(input_frescoes_fns{i}, grayscale_conversion);
             fresco_size         = size(im_fresco_color,[1,2]);
             nb_channels         = size(im_fresco_color,3);
+
+            if isempty(im_fresco_color)
+                error(sprintf('Unable to load fresco image %s', input_frescoes_fns{i}));
+            end
 
             % We save a copy of the fresco image
             imwrite(im_fresco_color, [fresco_dir filesep fresco_name '.png'], 'Alpha', uint8(255*ones(fresco_size)));
@@ -249,38 +258,38 @@ function generate_dataset()
                                 save_gen_parameters({'min_dist', 'missing_rate', 'spurious_rate', 'mean_frags_gap', 'noise_std', 'fragmentation_params', ...
                                                      'min_scale_factor', 'max_scale_factor', 'min_erosion_factor', 'max_erosion_factor'}, ...
                                                     {double(fresco_fragmentation_min_dist2), double(missing_rate*100), double(spurious_rate*100), ...
-                                                    double(2*mean(erosion_radii)), double(noise_std), fresco_fragmentation_params, ...
-                                                    double(fragments_scale_factors_range(1)), double(fragments_scale_factors_range(2)), ...
-                                                    double(fragments_erosion_factors_range(1)), double(fragments_erosion_factors_range(2))}, ...
+                                                     double(2*mean(erosion_radii)), double(noise_std), fresco_fragmentation_params, ...
+                                                     double(fragments_scale_factors_range(1)), double(fragments_scale_factors_range(2)), ...
+                                                     double(fragments_erosion_factors_range(1)), double(fragments_erosion_factors_range(2))}, ...
                                                     parameters_fn);
 
-                                % We save the fragment images (ok)
+                                % We save the fragment images
                                 save_fragment_images(frags_infos3, frags_dir);
 
-                                % We save the list of true fragments (ok)
+                                % We save the list of true fragments
                                 save_true_fragments_parameters(frags_translations3, frags_angles3, true_idx, true_frags_fn);
 
-                                % We save the list of spurious fragments (ok)
+                                % We save the list of spurious fragments
                                 save_spurious_fragments_idx(spurious_idx, spurious_frags_fn);
 
-                                % We save the file constraining the placement of fragment images (ok)
+                                % We save the file constraining the placement of fragment images (no constraints here)
                                 geometric_constraints = struct('locations', [], 'orientations', []);
                                 save_geometric_constraints(geometric_constraints, constraints_fn);
 
-                                % We construct the solution composed of fragments (ok)
+                                % We construct the solution composed of fragments
                                 frags_sol = create_fragments_solution(im_seg, frags_translations3, frags_angles3, frags_seg_idx3, true_idx);
 
-                                % We save the neighboring relationships between fragments (ok)
+                                % We save the neighboring relationships between fragments
                                 save_fragment_neighbors(frags_sol, neighbors_fn);
 
-                                % We build the ideal fresco reconstruction (ok)
+                                % We build the ideal fresco reconstruction
                                 [~,~,im_rec_color] = get_reconstructed_fresco(fresco_size, nb_channels, frags_infos3, frags_sol, interpolation_type, background_color);
 
                                 %--- debug ---
                                 %figure, imshow(im_rec_color,[]);
                                 %-------------
 
-                                % We save the ideal fresco reconstructions (ok)
+                                % We save the ideal fresco reconstructions
                                 save_reconstructed_fresco(im_rec_color, {}, frags_idx_color, neighbors_color, rebuilt_img_fn);          % reconstructed fresco without neighboring relationships
                                 save_reconstructed_fresco(im_rec_color, frags_sol, frags_idx_color, neighbors_color, rebuilt_img_n_fn); % reconstructed fresco with neighboring relationships
                             end

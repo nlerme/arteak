@@ -41,6 +41,11 @@ function generate_dataset()
             rng(seed, 'simdTwister');
         end
 
+        % We check if the root directory exists
+        if ~isfolder(root_frescoes_dir)
+            error(sprintf('Unable to find root directory %s', root_frescoes_dir));
+        end
+
         % We loop over fresco directories
         frescoes_dirs = get_matching_dirs(root_frescoes_dir, '.*');
 
@@ -56,12 +61,11 @@ function generate_dataset()
             % Message
             disp(sprintf('+ %s (%d/%d)', fresco_dir, i, numel(frescoes_dirs)));
 
-            % We look for non degraded fresco image
+            % We look for the fresco image file
             fresco_fn = get_matching_files(frescoes_dirs{i}, [fresco_dir '.png']);
 
             if numel(fresco_fn)==0
                 error(sprintf('Unable to find fresco image in directory %s', frescoes_dirs{i}));
-                continue;
             end
 
             fresco_fn = fresco_fn{1};
@@ -70,6 +74,10 @@ function generate_dataset()
             [im_fresco_color,~] = load_image(fresco_fn, false);
             fresco_size         = size(im_fresco_color, [1,2]);
             nb_channels         = size(im_fresco_color, 3);
+
+            if isempty(im_fresco_color)
+                error(sprintf('Unable to load fresco image %s', fresco_fn));
+            end
 
             % We loop over degradation rates
             for j=1:numel(fresco_degradation_rates)
@@ -110,7 +118,7 @@ function generate_dataset()
                 frags_fns = get_matching_files(frags_dir, ['.*\.png']);
 
                 if numel(frags_fns)==0
-                    warning(sprintf('No fragment images found in config directory %s', config_dirs{j}));
+                    warning(sprintf('No fragment images found in directory %s', frags_dir));
                     continue;
                 end
 

@@ -49,13 +49,18 @@ function generate_dataset()
             rng(seed, 'simdTwister');
         end
 
-        % We create output directory if needed
-        if purge_dataset && isfolder(output_frescoes_dir)
-            rmdir(output_frescoes_dir, 's');
+        % We check if the input directory exists
+        if ~isfolder(input_frescoes_dir)
+            error(sprintf('Unable to find input directory %s', input_frescoes_dir));
         end
 
+        % We create output directory if needed
         if ~isfolder(output_frescoes_dir)
             mkdir(output_frescoes_dir);
+        else
+            if purge_dataset
+                rmdir(output_frescoes_dir, 's');
+            end
         end
 
         % We loop over input fresco filenames
@@ -75,6 +80,10 @@ function generate_dataset()
             % We load fresco image and get its size
             [im_fresco_color,~] = load_image(input_frescoes_fns{i}, grayscale_conversion);
             fresco_size         = size(im_fresco_color,[1,2]);
+
+            if isempty(im_fresco_color)
+                error(sprintf('Unable to load fresco image %s', input_frescoes_fns{i}));
+            end
 
             % We save a copy of the fresco image
             imwrite(im_fresco_color, [fresco_dir filesep fresco_name '.png'], 'Alpha', uint8(255*ones(fresco_size)));

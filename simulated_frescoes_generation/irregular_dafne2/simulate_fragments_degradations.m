@@ -19,7 +19,7 @@ function im_result = simulate_fragments_degradations( im_frags, erosion_radii, n
     for k=1:numel(im_result)
         % Erosion
         if erosion_radii(k)>0
-            im_result{k}.alpha = imerode(im_result{k}.alpha, strel('disk', erosion_radii(k)));
+            im_result{k}.alpha = imerode(im_result{k}.alpha, strel('disk', erosion_radii(k), 0));
         end
 
         % Gaussian noise
