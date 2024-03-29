@@ -178,7 +178,7 @@ function frags_sol = run_init_non_blind_reconstruction( im_fresco_color, im_fres
                                         im_frag_color, im_inner_circle, ic_radius_t, color_matching_nb_rectangles);
 
             % We binarize the grayscale confidence map
-            im_map2 = binarize_confidence_map(im_map, color_matching_threshold*max(im_map(:)), color_matching_dilation_radius);
+            im_map2 = binarize_confidence_map(im_map, color_matching_threshold*max(im_map(:)), color_matching_dilation_radius); % TODO: CHECK THAT max(im_map(:)) IS USEFUL!!!!!!
 
             % We keep track of cover rate for current fragment
             frag_cover_rate    = sum(im_map2(:))/fresco_nb_pixels*100.0;

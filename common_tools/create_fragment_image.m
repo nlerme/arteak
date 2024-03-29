@@ -1,4 +1,4 @@
-% This function create a rotated and scaled small image of a fragment with 
+% This function create a rotated and scaled image of a fragment with 
 % alpha channel according to a provided region of a fragmentation. Fresco
 % image is assumed to be larger than the fragmentation image. Most often,
 % both are expected to be of the same size.

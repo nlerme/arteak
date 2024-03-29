@@ -3,6 +3,7 @@
 % Inputs:
 %   * im_fresco_color:       RGB/grayscale fresco image (matrix in uint8 format)
 %   * noise_std:             standard deviation of Gaussian noise (>0)
+%   * palette_size:          number of colors used for fading (integer in {1,...,256})
 %   * missing_parts_rates:   range of degradation rates (vector of reals in [0,1])
 %   * missing_parts_params:  parameters of the degradation (struct)
 % 
@@ -10,15 +11,22 @@
 %   * im_noisy:   noisy RGB/grayscale fresco image (matrix in uint8 format)
 %   * im_deg:     degradation map (uint8 image)
 %   * im_alphas:  stack of degraded fresco images (uint8 images where pixel intensity is set to 255 when degradation rate is 0)
-function [im_noisy,im_deg,im_alphas] = simulate_fresco_degradations( im_fresco_color, noise_std, missing_parts_rates, missing_parts_params )
+function [im_noisy,im_deg,im_alphas] = simulate_fresco_degradations( im_fresco_color, noise_std, palette_size, missing_parts_rates, missing_parts_params )
     % We get the size of the fresco image
     fresco_size = size(im_fresco_color, [1,2]);
 
+    % We assign the output image wit the input one
+    im_noisy = im_fresco_color;
+
+    % We reduce the number of available image intensities on each channel of the fresco image to mimic image fading
+    if palette_size~=256
+        [im_seg,centroids] = imsegkmeans(im_noisy, palette_size);
+        im_noisy           = label2rgb(im_seg, im2double(centroids));
+    end
+
     % We apply Gaussian noise on the fresco image
     if noise_std>0
-        im_noisy = uint8(255.0*imnoise(im2double(im_fresco_color), 'gaussian', 0.0, noise_std));
-    else
-        im_noisy = im_fresco_color;
+        im_noisy = uint8(255.0*imnoise(im2double(im_noisy), 'gaussian', 0.0, noise_std));
     end
 
     % We allocate memory for storing output results

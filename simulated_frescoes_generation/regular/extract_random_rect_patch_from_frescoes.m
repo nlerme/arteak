@@ -1,10 +1,11 @@
-% This function extracts a non rectangular region from a collection of 
-% fresco images. The fresco image is chosen uniformly at random (modulo 
+% This function randomly extracts a [rectangular] region from a collection 
+% of fresco images. The fresco image is chosen uniformly at random (modulo 
 % the fact that it is large enough from which it is extracted).
 % 
 % Inputs:
-%   * im_src_seg:          fragmentation image (matrix in uint32 format)
-%   * frag_idx:            index of the fragment to extract in the fragmentation image (positive integer)
+%   * src_fresco_size:     size of the original fresco image (2D vector of positive integers)
+%   * fragment_size:       desired size of fragment (2D vector of positive integers)
+%   * available_angles:    list of available rotation angles in degrees (vector with entries in [0,360.0[)
 %   * filenames:           full filename of fresco images (cell array)
 %   * nb_attempts:         number of attempts before exiting the function (>0)
 %   * to_grayscale:        flag indicating if resulting image is converted to grayscale (true or false)
@@ -15,18 +16,18 @@
 % Outputs:
 %   * im_frag_color:  multi-channels fragment color image (matrix in uint8 format)
 %   * im_frag_alpha:  alpha channel of fragment image (matrix in uint8 format)
-function [im_frag_color,im_frag_alpha] = randomly_extract_non_rectangular_patch_from_frescoes( im_src_seg, frag_idx, filenames, nb_attempts, to_grayscale, ...
-                                                                                               scale_factor_range, padding_factor, interpolation_type )
-    % We loop for a (small expected) couple of iterations
-    src_fresco_size = size(im_src_seg);
+function [im_frag_color,im_frag_alpha] = extract_random_rect_patch_from_frescoes( src_fresco_size, fragment_size, available_angles, filenames, ...
+                                                                                  nb_attempts, to_grayscale, scale_factor_range, padding_factor, interpolation_type )
+    % We loop for a (expected small) couple of iterations
     count           = 0;
     finished        = false;
 
     while ~finished
         % It the number of attempts is reached, we return an empty fragment image
         if count>=nb_attempts
-            im_frag  = [];
-            finished = true;
+            im_frag_color = [];
+            im_frag_alpha = [];
+            finished      = true;
             continue;
         end
 
@@ -49,9 +50,13 @@ function [im_frag_color,im_frag_alpha] = randomly_extract_non_rectangular_patch_
         im_fresco_color = imresize(im_fresco_color, new_fresco_size);
 
         % Finally, we randomly extract a patch from the resized fresco image
-        rotation_angle                = rand_bounds(0.0, 360.0); % CAUTION: rotation is counterclockwise
-        scale_factor                  = rand_bounds(scale_factor_range(1), scale_factor_range(2));
-        [im_frag_color,im_frag_alpha] = create_fragment_image(im_fresco_color, im_src_seg, frag_idx, rotation_angle, scale_factor, padding_factor, interpolation_type);
-        finished                      = true;
+        rotation_angle                  = available_angles(randi(numel(available_angles)));
+        scale_factor                    = rand_bounds(scale_factor_range(1), scale_factor_range(2));
+        p                               = [randi([1,new_fresco_size(1)-fragment_size(1)+1]),randi([1,new_fresco_size(2)-fragment_size(2)+1])];
+        q                               = p+fragment_size-1;
+        im_seg                          = zeros(new_fresco_size, 'logical');
+        im_seg(p(1):q(1),p(2):q(2))     = 1;
+        [im_frag_color,im_frag_alpha,~] = create_fragment_image(im_fresco_color, im_seg, 1, rotation_angle, scale_factor, padding_factor, interpolation_type);
+        finished                        = true;
     end
 end

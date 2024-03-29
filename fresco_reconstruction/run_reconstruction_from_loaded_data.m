@@ -98,8 +98,7 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             im_frag_alpha_d = imdilate(im_frag_alpha, strel('disk', round(extrapolation_distance), 0));
 
             % We do extrapolation on grayscale fragment image
-            %im_frag_color_ext          = im2double(inpaintExemplar(im_frag_color, ~im_frag_alpha, 'FillOrder', 'tensor', 'PatchSize', [5,5]));
-            im_frag_color_ext          = im_frag_color;
+            im_frag_color_ext          = im2double(inpaintExemplar(im_frag_color, ~im_frag_alpha, 'FillOrder', 'tensor', 'PatchSize', [5,5]));
             im_frag_gray_ext           = rgb2gray(im_frag_color_ext);
             im_frag_gray               = im2double(rgb2gray(im_frag_color));
             frag_idx                   = find(im_frag_alpha_d==0);
