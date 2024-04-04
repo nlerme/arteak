@@ -12,6 +12,16 @@ of published papers (see [2,3,4]), tested on simulated [1] and real data. The av
 * **real_frescoes_processing** : software for generating datasets from real data.
 * **simulated_frescoes_generation** : software for generating simulated datasets with fragments.
 
+$$
+f(x)
+\left\{
+	\begin{array}{lll}
+		0 & \mbox{if} & x=5\\
+		1 & \mbox{if} & x \neq 5\\
+	\end{array}
+\right.
+$$
+
 References
 ----------
 [1] DAFNE: A dataset of fresco fragments for digital anastlylosis. P. Dondi, L. Lombardi, A. Setti, Pattern Recognition Letters, volume 138, pages 631-637, 2020.
