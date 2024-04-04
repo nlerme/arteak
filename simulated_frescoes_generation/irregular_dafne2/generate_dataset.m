@@ -34,7 +34,6 @@ function generate_dataset()
         interpolation_type              = 'nearest';                                                                                      % Interpolation type for reconstructing frescoes from fragments (nearest, bilinear, bicubic, etc.)
         frags_idx_color                 = 'white';                                                                                        % Color of fragment index in reconstructed fresco (string or [0,1]^3)
         neighbors_color                 = 'cyan';                                                                                         % Color of neighboring relationships between fragments in reconstructed fresco (string or [0,1]^3)
-        purge_dataset                   = true;                                                                                           % Enables/disables destruction of previous version of dataset (true or false)
         nb_attempts                     = 100;                                                                                            % Number of attempts when extracting random patches from fresco images (>0)
         padding_factor                  = 1.2;                                                                                            % Factor by which fragment images are enlarged before saving; e.g. 1.2 means 20% of enlargement (>=0)
         fresco_palette_sizes            = [10,256];                                                                                       % Reduced number of color for fading on fresco image (vector with entries in {0,...,256})
@@ -51,6 +50,7 @@ function generate_dataset()
         fragments_spurious_rates        = [0.0,0.2];                                                                                      % Percentages of spurious fragments (vector with entries in [0,1])
         fragments_erosion_factors_range = [1.0,1.0];                                                                                      % Range of erosion factors for varying erosion radii in the same fresco (pair of positive reals)
         fragments_scale_factors_range   = [1.0,1.0];                                                                                      % Range of scale factors of spuriously generated fragments (pair of positive reals)
+        purge_dataset                   = true;                                                                                           % Enables/disables destruction of previous version of dataset (true or false)
 
         % We set the seed for pseudo random number generation. simdTwister algorithm is used for 
         % reproducibility (same sequence of random numbers will be obtained on different machines)
@@ -124,8 +124,6 @@ function generate_dataset()
                     end
                 end
             end
-
-            continue;
 
             %--------------------------------------------------------------
 
