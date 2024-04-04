@@ -64,4 +64,5 @@ The format described here is common to all our datasets. A fresco typically has 
   0 9
   ...
   ```
-  In the above example, fragments 0 and 10 are defined as adjacent. No matter if the line "10 0" is present, symmetry between is ensured to save memory.
+  In the above example, fragments 0 and 10 are defined as adjacent. No matter if the line "10 0" is present, symmetry between is ensured to save memory. 
+  The list is not assumed to be ordered.
