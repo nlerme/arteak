@@ -5,13 +5,14 @@
 % 
 % Outputs:
 %   * geometric_constraints:  resulting geometric constraints (struct)
+%       * geometric_constraints.locations:     matrix of Nx2 reals
+%       * geometric_constraints.orientations:  row vector of reals
 function geometric_constraints = load_geometric_constraints( filename )
-    % We make return variable as empty
+    % We allocate memory for result
     geometric_constraints = struct('locations', [], 'orientations', []);
 
     % We check if the file exists
     if ~isfile(filename)
-        geometric_constraints = [];
         return;
     end
 

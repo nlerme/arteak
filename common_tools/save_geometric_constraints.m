@@ -2,7 +2,9 @@
 % 
 % Inputs:
 %   * geometric_constraints:  geometric constraints (struct)
-%   * filename:               name of the saved file (string)
+%     * geometric_constraints.locations:     matrix of Nx2 reals
+%     * geometric_constraints.orientations:  row vector of reals
+%   * filename:  name of the saved file (string)
 % Outputs:
 %   None
 function save_geometric_constraints( geometric_constraints, filename )
