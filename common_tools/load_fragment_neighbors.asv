@@ -1,0 +1,74 @@
+% This function load the text file describing the relationships between
+% adjacent fragments.
+% 
+% Inputs:
+%   * filename:      name of the saved file (string)
+%   * in_frags_sol:  input solution composed of fragments (cell array)
+% 
+% Outputs:
+%   * out_frags_sol:  resulting solution composed of fragments (cell array)
+function out_frags_sol = load_fragment_neighbors( filename, in_frags_sol )
+    % We check if input arguments are valid
+    if isempty(in_frags_sol) || isempty(filename)
+        error('Fragments solution and filename must be non empty');
+    end
+
+    % We open the file in reading mode
+    fp = fopen(filename, 'r');
+
+    if fp<0
+        error('Unable to read the text file %s', filename);
+    end
+
+    % We load neighboring relationships
+    [fn_idx1,fn_idx2] = textread(filename, '%d %d'); % format
+    fn_idx1           = fn_idx1 + 1; % we add one since indexes are assumed to start at zero
+    fn_idx2           = fn_idx2 + 1;
+
+    if numel(fn_idx1)~=numel(fn_idx2)
+        error('Neighboring fragments file wrongly formatted');
+    end
+
+    out_frags_sol = in_frags_sol;
+
+    if max(fn_idx1)<1 || max(fn_idx2)<1
+        return;
+    end
+
+    % We make symmetrical fragments relationships
+    fn_idx                  = zeros(max(max(fn_idx1),max(fn_idx2)), 'logical');
+    fn_idx(fn_idx1,fn_idx2) = 1;
+    fn_idx                  = (fn_idx+fn_idx')>0;
+
+    % We loop over neighboring relationships
+    [fn_idx1,fn_idx2] = find(triu(fn_idx,1)>0); % upper triangular part of adjacency matrix without diagonal
+    f_idx             = cellfun(@(x) x.idx, in_frags_sol);
+
+    for k=1:numel(fn_idx1)
+        idx1 = find(f_idx==fn_idx1(k));
+        idx2 = find(f_idx==fn_idx2(k));
+
+        for i=idx1
+            for j=idx2
+                
+                out_frags_sol{idx_i}.neighbors = [out_frags_sol{idx_i}.neighbors,idx_j];
+                out_frags_sol{idx_j}.neighbors = [out_frags_sol{idx_j}.neighbors,idx_i];
+            end
+        end
+    end
+
+    % for l=1:numel(in_frags_sol)
+    %     idx_n     = neighbors2(find(neighbors1==in_frags_sol{l}.idx));
+    %     neighbors = [];
+    % 
+    %     for i=1:numel(idx_n)
+    %         j = find(cellfun(@(x) x.idx, in_frags_sol)==idx_n(i));
+    % 
+    %         if numel(j)==1 && j>=1 && j<=numel(in_frags_sol)
+    %             neighbors = [neighbors,j];
+    %         end
+    %     end
+    % 
+    %     frags_sol{l}.neighbors = neighbors;
+    % end
+end

@@ -1,14 +1,15 @@
-% This function saves the transformation parameters of true fragments.
+% This function saves the information about true fragments (i.e. belonging
+% to the available ground truth).
 % 
 % Inputs:
 %   * frag_translations:  2D translations of fragments (cell array)
 %   * frag_angles:        angle of rotation of fragments (cell array)
 %   * true_idx:           indexes of fragments belonging to the solution (array)
-%   * filename:           name of the save file (string)
+%   * filename:           name of the file to be saved (string)
 % 
 % Outputs:
 %   None
-function save_true_fragments_parameters( frag_translations, frag_angles, true_idx, filename )
+function save_true_fragments( frag_translations, frag_angles, true_idx, filename )
     % We check if input arguments are valid
     if numel(frag_translations)~=numel(frag_angles)
         error('Translations and angles arrays must be of the same size');

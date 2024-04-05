@@ -1472,28 +1472,7 @@ function varargout = arteak_gui( varargin )
             end
 
             % We load neighbors list
-            [neighbors1,neighbors2] = textread(neighbors_frags_fn, '%d %d');
-            neighbors1              = neighbors1 + 1;
-            neighbors2              = neighbors2 + 1;
-
-            if numel(neighbors1)~=numel(neighbors2)
-                uiwait(errordlg(sprintf('Text file %s is wrongly formatted for reconstruction %s', neighbors_frags_fn, full_directories{k}), 'ARTEAK ERROR', 'modal'));
-            end
-
-            for l=1:numel(frags_sol)
-                idx_n     = neighbors2(find(neighbors1==frags_sol{l}.idx));
-                neighbors = [];
-
-                for i=1:numel(idx_n)
-                    j = find(cellfun(@(x) x.idx, frags_sol)==idx_n(i));
-    
-                    if numel(j)==1 && j>=1 && j<=numel(frags_sol)
-                        neighbors = [neighbors,j];
-                    end
-                end
-
-                frags_sol{l}.neighbors = neighbors;
-            end
+            frags_sol = load_fragment_neighbors(neighbors_frags_fn, frags_sol);
 
             % We build the reconstructed fresco and add it to the list
             fresco_size                  = size(g_mydata.im_fresco_color, [1,2]);

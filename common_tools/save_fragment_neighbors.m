@@ -23,7 +23,12 @@ function save_fragment_neighbors( frags_sol, filename )
     for i=1:numel(frags_sol)
         if isfield(frags_sol{i}, 'neighbors')
             for j=frags_sol{i}.neighbors
-                fprintf(fp, '%d %d\n', frags_sol{i}.idx-1, frags_sol{j}.idx-1);
+                f_idx_i = frags_sol{i}.idx-1;
+                f_idx_j = frags_sol{j}.idx-1;
+
+                if f_idx_i<f_idx_j % reverse relationships and self relationships are discarded
+                    fprintf(fp, '%d %d\n', f_idx_i, f_idx_j);
+                end
             end
         end
     end

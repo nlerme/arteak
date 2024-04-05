@@ -55,7 +55,7 @@ The format described here is common to all our datasets. A fresco typically has 
   379
   ...
   ```
-  In the above example, the fragments n°71, 0 and 379 and defined to be spurious. The first fragment is assumed to be indexed with 0. 
+  In the above example, the fragments n°71, 0 and 379 and defined to be spurious. The first fragment is assumed to be indexed by 0. 
   The list is not assumed to be ordered. If no spurious fragments exist (like for real data), this file must be created but left empty.
 * **neighbors.txt**: text file describing relationships between adjacent fragments:
   ```
@@ -65,4 +65,4 @@ The format described here is common to all our datasets. A fresco typically has 
   ...
   ```
   In the above example, fragments 0 and 10 are defined as adjacent. No matter if the line "10 0" is present, symmetry between is ensured to save memory. 
-  The list is not assumed to be ordered.
+  The list is not assumed to be ordered. Self-relationships are discarded. The first fragment is assumed to be indexed by 0.

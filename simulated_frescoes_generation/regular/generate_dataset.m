@@ -1,4 +1,4 @@
-% This function builds a dataset with fragments of regular shape.
+% This function generates a new dataset with fragments of rectangular shape.
 function generate_dataset()
     % We run the main function
     main();
@@ -290,10 +290,10 @@ function generate_dataset()
                                     save_fragment_images(frags_infos3, frags_dir);
 
                                     % We save the list of true fragment coordinates
-                                    save_true_fragments_parameters(frags_translations3, frags_angles3, true_idx, true_frags_fn);
+                                    save_true_fragments(frags_translations3, frags_angles3, true_idx, true_frags_fn);
 
                                     % We save the list of spurious fragments
-                                    save_spurious_fragments_idx(spurious_idx, spurious_frags_fn);
+                                    save_spurious_fragments(spurious_idx, spurious_frags_fn);
 
                                     % We save the file constraining the placement of fragment images
                                     geometric_constraints = struct('locations', [], 'orientations', []);

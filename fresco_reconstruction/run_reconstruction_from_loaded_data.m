@@ -197,7 +197,7 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
             outer_circle_radius = final_frags_infos{idx}.outer_circle_radius;
             frags_gt{k}         = struct('idx', idx, 'translation', translation, 'angle', angle, 'inner_circle_center', inner_circle_center, ...
                                          'inner_circle_radius', inner_circle_radius, 'outer_circle_center', outer_circle_center, ...
-                                         'outer_circle_radius', outer_circle_radius, 'neighbors', [], 'color_idx', 3, 'fresco_coords', [], 'frag_coords', []);
+                                         'outer_circle_radius', outer_circle_radius, 'neighbors', [], 'color_idx', 3, 'fresco_coords', [], 'frag_coords', []); % TODO: CHECK COLOR_IDX VALUE!!!!!
             true_frags_idx      = [true_frags_idx,id(k)+1];
 
             msg(sprintf('  + fragment | id=%d, translation=(%d,%d), angle=%f, inner circle=(%d,%d)|%.2f, outer circle=(%.2f,%.2f)|%.2f', ...
@@ -207,31 +207,7 @@ function final_frags_sol = run_reconstruction_from_loaded_data( im_fresco_color,
         % We load neighboring relationships
         if isfile(neighbors_fn)
             msg('  + loading neighboring relationships', verbose);
-
-            [neighbors1,neighbors2] = textread(neighbors_fn, '%d %d');
-            neighbors1              = neighbors1 + 1;
-            neighbors2              = neighbors2 + 1;
-
-            if numel(neighbors1)~=numel(neighbors2)
-                error('Arrays neighbors1 and neighbors2 must be of the same size');
-            end
-
-            for k=1:numel(frags_gt)
-                %msg(sprintf('  + fragment | id=%d', frags_gt{k}.idx), verbose);
-
-                idx_n     = neighbors2(find(neighbors1==frags_gt{k}.idx));
-                neighbors = [];
-
-                for i=1:numel(idx_n)
-                    j = find(cellfun(@(x) x.idx, frags_gt)==idx_n(i));
-    
-                    if numel(j)==1 && j>=1 && j<=numel(frags_gt)
-                        neighbors = [neighbors,j];
-                    end
-                end
-
-                frags_gt{k}.neighbors = neighbors;
-            end
+            frags_gt = load_fragment_neighbors(neighbors_fn, frags_gt);
         end
 
         all_frags_idx      = 1:numel(final_frags_infos);
