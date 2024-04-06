@@ -46,9 +46,9 @@ function generate_dataset()
         input_frescoes_fns              = get_files_list(input_frescoes_dir);                                                             % Input fresco filenames (cell array of strings)
         output_frescoes_dir             = ['..' filesep '..' filesep '..' filesep 'data' filesep 'simulated' filesep 'regular'];          % Output frescoes directory (string)
         background_color                = [0,0,0];                                                                                        % RGB color of reconstructed fresco (in [0,1]^3)
-        purge_dataset                   = true;                                                                                           % Enables/disables destruction of previous version of dataset (true or false)
-        idx_color                       = 'white';                                                                                        % Color of fragment index in reconstructed fresco (string or [0,1]^3)
+        frags_idx_color                 = 'white';                                                                                        % Color of fragment index in reconstructed fresco (string or [0,1]^3)
         neighbors_color                 = 'cyan';                                                                                         % Color of neighboring relationships between fragments in reconstructed fresco (string or [0,1]^3)
+        purge_dataset                   = true;                                                                                           % Enables/disables destruction of previous version of dataset (true or false)
 
         % We set the seed for pseudo random number generation. simdTwister algorithm is used for 
         % reproducibility (same sequence of random numbers will be obtained on different machines)
@@ -278,12 +278,12 @@ function generate_dataset()
                                     % We save the parameters used for generating fragment images
                                     save_gen_parameters({'palette_size', 'fragment_size', 'missing_rate', 'spurious_rate', 'mean_frags_gap', 'noise_std', ...
                                                          'min_scale_factor', 'max_scale_factor', 'min_erosion_factor', 'max_erosion_factor', ...
-                                                         'rotation_angles', 'padding_factor', 'interpolation_type', 'nb_attempts'}, ...
-                                                        {double(palette_size), double(fragment_size), double(missing_rate*100), double(spurious_rate*100), ...
+                                                         'padding_factor', 'interpolation_type', 'nb_attempts'}, ...
+                                                        {uint64(palette_size), uint64(max(fragment_size)), double(missing_rate*100), double(spurious_rate*100), ...
                                                          double(2*mean(erosion_radii)), double(noise_std), ...
                                                          double(fragments_scale_factors_range(1)), double(fragments_scale_factors_range(2)), ...
                                                          double(fragments_erosion_factors_range(1)), double(fragments_erosion_factors_range(2)), ...
-                                                         double(fragments_rotation_angles), double(padding_factor), interpolation_type, double(nb_attempts)}, ...
+                                                         double(padding_factor), interpolation_type, uint64(nb_attempts)}, ...
                                                          parameters_fn);
 
                                     % We save the fragment images
@@ -321,8 +321,8 @@ function generate_dataset()
                                     %-------------
 
                                     % We save the ideal fresco reconstructions
-                                    save_reconstructed_fresco(im_rec_color, {}, idx_color, neighbors_color, rebuilt_img_fn);          % reconstructed fresco without neighboring relationships
-                                    save_reconstructed_fresco(im_rec_color, frags_sol, idx_color, neighbors_color, rebuilt_img_n_fn); % reconstructed fresco with neighboring relationships
+                                    save_reconstructed_fresco(im_rec_color, {}, frags_idx_color, neighbors_color, rebuilt_img_fn);          % reconstructed fresco without neighboring relationships
+                                    save_reconstructed_fresco(im_rec_color, frags_sol, frags_idx_color, neighbors_color, rebuilt_img_n_fn); % reconstructed fresco with neighboring relationships
                                 end
                             end
                         end

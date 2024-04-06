@@ -1,38 +1,24 @@
 Presentation
 ------------
-ARTEAK is a research project aiming at recovering the optimal spatial organization of a damaged fresco from its original elements with or without a picture of the fresco. 
-This problem is very challenging because of local aspects (elements must locally match with each other) but also global aspects (the reassembled elements must depict a picture 
-making sense). The main application of this problem concerns the reconstruction of artworks in cultural heritage and archaeology. It is of great importance to to improve the 
-understanding and the conservation of artworks.
+This directory contains tools for automatically generating simulated frescoes and provide them in the appropriate format with ground truths. More precisely, it 
+takes the fresco models from [1] as input and generates new data by simulating fragmentations but also degradations on both fresco models (noise, missing parts, 
+color fading) and fragment images (noise, erosion and color fading). The generated fragments are of arbitrary shape. The fragmentation process is described 
+in the next section. An example of illustration is given below for the fresco ``Resurrection'' from Piero Della Francesca.
 
-The software related to this project is distributed under LGPL license but only for research purposes. It has been heavily tested on a large dataset with simulated 
-fragmented frescoes [1]. This software involves 6 distinct different packages:
+![Full fresco model with color fading, noise and missing parts](https://ibb.co/PGDmDn4)
+![Ideal reconstruction](https://ibb.co/PGDmDn4)
 
-* **fresco_reconstruction** : scripts for running automatic fresco reconstruction
-* **graphical_user_interface** : interface for handling fresco reconstructions
-* **common_tools** : mandatory dependencies
-* **regular_fragments_generation** : script for generating a dataset derived from [1] with fragments of regular shape.
-* **irregular_fragments_generation_piercarlo** : script for generating a dataset derived from [1] with fragments of irregular shape.
-* **irregular_fragments_generation_nicolas** : script for generating a dataset with fragments of irregular shape.
+Fragmentation process
+---------------------
+1) Generation of random seeds using Poisson sampling
+2) Generation of normalized power law noise image
+3) Computation of Voronoi diagram from seeds
+4) Computation of distance map to the contours of Voronoi diagram
+5) Erosion of Voronoi cells based on the distance map
+6) Normalization of distance map
+7) Watershed-based segmentation between eroded Voronoi cells
 
-The fresco reconstruction is based on Marked point processes and solved with an algorithm alternating sampling, fragments selection and fragments placement until convergence [3]. 
-The algorithm is initialized with [2] or exhaustive, depending on the availability of the fresco model. The sampling step is performed using machine learning. The fragments 
-placement step is performed in the continuous domain using gradient descent. Finally, the fragments selection step is performed in the discrete domain using graph cuts [4,5,6].
-
-An example of execution of the graphical user interface is shown below:
-
-![Screenshot](https://i.ibb.co/8PvF9Lm/screenshot.png)
-
-References
-----------
-[1] DAFNE: A dataset of fresco fragments for digital anastlylosis. P. Dondi, L. Lombardi, A. Setti, Pattern Recognition Letters, volume 138, pages 631-637, 2020.
-
-[2] N. Lermé, S. Le Hégarat-Mascle, B. Zhang, E. Aldea, Fast and Efficient Reconstruction of Digitized Frescoes, Pattern Recognition Letters, 138, 417-423, 2020.
-
-[3] Automatic Reconstruction of Digitized Frescoes, N. Lermé, S. Le Hégarat-Mascle, F. Malgouyres, G. Alkan. Preprint, 2022.
-
-[4] Efficient Approximate Energy Minimization via Graph Cuts. Y. Boykov, O. Veksler, R.Zabih. IEEE Transactions on Pattern Analysis and Machine Intelligence, 20(12):1222-1239, 2001.
-
-[5] What Energy Functions can be Minimized via Graph Cuts? V. Kolmogorov, R.Zabih. IEEE Transactions on Pattern Analysis and Machine Intelligence, 26(2):147-159, 2004. 
-
-[6] An Experimental Comparison of Min-Cut/Max-Flow Algorithms for Energy Minimization in Vision. Y. Boykov, V. Kolmogorov. IEEE Transactions on Pattern Analysis and Machine Intelligence, 26(9):1124-1137, 2004.
+For the last step, the involved weights is a linear combination between the noise image and the distance map. Since pixels at the boundary between adjacent 
+fragments is assigned with the same dummy label (zero), we need to assign them a label from a fragment. For such pixels, we assign them with the label having the 
+largest number of occurrences in their immediate neighborhood. Notice that such a fragmentation process does not take into account the nature of the support on 
+which a fresco is hung nor its pigments aging.

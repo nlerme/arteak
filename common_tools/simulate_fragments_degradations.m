@@ -10,7 +10,7 @@
 %   * im_result:  degraded fragment images (cell array)
 function im_result = simulate_fragments_degradations( im_frags, erosion_radii, noise_stds, palette_sizes )
     % We check if the number of elements in all structures if the same
-    if numel(im_frags)~=numel(erosion_radii) || numel(im_frags)~=numel(noise_stds)
+    if numel(im_frags)~=numel(erosion_radii) || numel(im_frags)~=numel(noise_stds) || numel(im_frags)~=numel(palette_sizes)
         error('The number of elements in all arrays must be the same');
     end
 
@@ -23,15 +23,16 @@ function im_result = simulate_fragments_degradations( im_frags, erosion_radii, n
             im_result{k}.alpha = imerode(im_result{k}.alpha, strel('disk', erosion_radii(k), 0));
         end
 
+        % We reduce the number of available image intensities on each channel of the fresco image to mimic image fading
+        if palette_sizes(k)~=256
+            [im_seg,lab_centroids] = imsegkmeans(im2single(rgb2lab(im_result{k}.color)), palette_sizes(k));
+            rgb_centroids          = max(0,min(1,im2double(lab2rgb(lab_centroids))));
+            im_result{k}.color     = label2rgb(im_seg, rgb_centroids, [1,1,1]);
+        end
+
         % Gaussian noise
         if noise_stds(k)>0
             im_result{k}.color = uint8(255.0*imnoise(im2double(im_result{k}.color), 'gaussian', 0.0, noise_stds(k)));
-        end
-
-        % We reduce the number of available image intensities on each channel of the fresco image to mimic image fading
-        if palette_sizes(k)~=256
-            [im_seg,centroids] = imsegkmeans(im_result{k}.color, palette_sizes(k));
-            im_result{k}.color = label2rgb(im_seg, im2double(centroids));
         end
 
         % Masking color channels with alpha channel

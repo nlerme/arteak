@@ -7,23 +7,22 @@ This directory contains tools for automatically generating simulated frescoes an
   (noise, missing parts, color fading) and fragment images (noise, erosion and color fading).
 * **regular** is the same as **irregular_dafne2** except that fragments are constrained to be rectangular.
 
-[1] DAFNE: A dataset of fresco fragments for digital anastlylosis. P. Dondi, L. Lombardi, A. Setti, Pattern Recognition Letters, volume 138, pages 631-637, 2020.
-
 File format
 -----------
 The format described here is common to all our datasets. A fresco typically has the following tree structure:
 
-* **fresco.png**: RGB fresco (model) image. The alpha channel indicates missing and available parts where intensities are null or positive, respectively.
-* **frag_eroded**: directory where fragment images are stored.
-  * **frag_eroded_XXX.png**: RGBA fragment image where X denotes its index (starting from 0). The alpha channel indicates the location of the fragment where intensities are positive.
-  * **gen_parameters.txt**: text file with parameters that made it possible to generate data.
+* **fresco.png**: RGB fresco (model) image. The image intensities are in the range {0,...,255}. The alpha channel indicates missing and available parts where intensities are null or positive, respectively.
+* **frag_eroded**: directory where information about fragments is stored.
+  * **frag_eroded_XXX.png**: RGBA fragment image where X denotes its index (starting from 0). The image intensities are in the range {0,...,255}. 
+  The alpha channel indicates the location of the fragment where intensities are positive.
+  * **gen_parameters.txt**: text file with parameters that made it possible to generate that fresco.
     ```
     mean_frags_gap 6.346201
     interpolation_type nearest
     spurious_rate 25.235
     ...
     ```
-    In the above example, each parameter is written on the same line as its value. The latter can be of any type.
+    In the above example, each parameter is written on the same line as its value. The type of the latter can be an integer, a real number or a string.
   * **geometric_constraints.txt**: text file constraining the placement of true fragments:
     ```
     3
@@ -65,4 +64,8 @@ The format described here is common to all our datasets. A fresco typically has 
   ...
   ```
   In the above example, fragments 0 and 10 are defined as adjacent. No matter if the line "10 0" is present, symmetry between is ensured to save memory. 
-  The list is not assumed to be ordered. Self-relationships are discarded. The first fragment is assumed to be indexed by 0.
+  The list is not assumed to be ordered. Self-relationships (loops) are discarded. The first fragment is assumed to be indexed by 0.
+
+References
+----------
+[1] DAFNE: A dataset of fresco fragments for digital anastlylosis. P. Dondi, L. Lombardi, A. Setti, Pattern Recognition Letters, volume 138, pages 631-637, 2020.

@@ -20,8 +20,9 @@ function [im_noisy,im_deg,im_alphas] = simulate_fresco_degradations( im_fresco_c
 
     % We reduce the number of available image intensities on each channel of the fresco image to mimic image fading
     if palette_size~=256
-        [im_seg,centroids] = imsegkmeans(im_noisy, palette_size);
-        im_noisy           = label2rgb(im_seg, im2double(centroids));
+        [im_seg,lab_centroids] = imsegkmeans(im2single(rgb2lab(im_noisy)), palette_size);
+        rgb_centroids          = max(0,min(1,im2double(lab2rgb(lab_centroids))));
+        im_noisy               = label2rgb(im_seg, rgb_centroids, [1,1,1]);
     end
 
     % We apply Gaussian noise on the fresco image
@@ -57,7 +58,7 @@ function [im_noisy,im_deg,im_alphas] = simulate_fresco_degradations( im_fresco_c
             z             = abs(ch-degradation_rate);
             [~,threshold] = min(z);
             threshold     = threshold/nb_bins;
-        
+
             % Finally, we return the input fresco image together with the thresholded noise image as alpha channel
             im_alphas(:,:,k) = uint8(255*(im_noise>=threshold));
         end
