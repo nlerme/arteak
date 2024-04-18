@@ -14,6 +14,9 @@ function generate_dataset()
         close all;
         clc;
 
+        % We turn off some undesirable warnings
+        warning('off', 'images:label2rgb:zerocolorSameAsRegionColor');
+
         % We add required paths recursively
         addpath_recurse(['..' filesep '..' filesep 'common_tools']);
 
@@ -41,7 +44,7 @@ function generate_dataset()
         fresco_missing_parts_params     = struct('type', 'power_law', 'exponent', 1.8);                                                   % Parameters for simulating degradations of the fresco image (struct)
         fresco_noise_stds               = [0.0,0.01];                                                                                     % Standard deviations of Gaussian noise of the fresco image (vector of positive reals)
         fresco_fragmentation_min_dists  = [0.05,0.10,0.15];                                                                               % Minimum distances between sampled location of fragments, relatively to the fresco image size (vector of positive reals)
-        fresco_fragmentation_params     = struct('noise_exponent', 1.0, 'uncertainty_band_size', 0.2, ...
+        fresco_fragmentation_params     = struct('noise_exponent', 1.0, 'uncertainty_band_size', 0.5, ...
                                                  'beta', 0.5, 'metric', 'euclidean');                                                     % Parameters for simulating fragmentation of frescoes (struct)
         input_frescoes_dir              = ['..' filesep '..' filesep '..' filesep 'data' filesep 'simulated' filesep 'irregular_dafne1']; % Input frescoes directory (string)
         input_frescoes_fns              = get_files_list(input_frescoes_dir);                                                             % Input frescoes filenames (cell array of strings)
@@ -70,13 +73,15 @@ function generate_dataset()
         else
             if purge_dataset
                 rmdir(output_frescoes_dir, 's');
+                disp('[ old dataset removed ]');
             else
                 error(sprintf('The output directory %s is not empty. Please remove it or set flag purge_dataset to true.', output_frescoes_dir));
             end
         end
 
         % We loop over input fresco filenames
-        parfor i=1:numel(input_frescoes_fns)
+        %parfor i=1:numel(input_frescoes_fns)
+        for i=1:numel(input_frescoes_fns)
             % We create output directory or delete it
             [~,fresco_name,~] = fileparts(input_frescoes_fns{i});
             all_other_fns     = setdiff(input_frescoes_fns, input_frescoes_fns{i});
@@ -91,6 +96,7 @@ function generate_dataset()
 
             % We load fresco image and get its size
             [im_fresco_color,~] = load_image(input_frescoes_fns{i}, grayscale_conversion);
+            im_fresco_color     = imresize(im_fresco_color, 0.25);
             fresco_size         = size(im_fresco_color,[1,2]);
             nb_channels         = size(im_fresco_color,3);
 
@@ -188,9 +194,9 @@ function generate_dataset()
 
                             for m=1:numel(extra_idx)
                                 my_idx                        = extra_idx(mod(m-1,nb_available_spurious_frags-1)+1); % to avoid out of bounds for index
-                                [im_frag_color,im_frag_alpha] = extract_random_patch_from_frescoes(im_seg_s, m, all_other_fns, nb_attempts, ...
-                                                                                                   grayscale_conversion, fragments_scale_factors_range, padding_factor, interpolation_type);
-                                frags_infos3{my_idx}          = {struct('alpha', im_frag_alpha, 'color', im_frag_color)};
+                                [im_frag_color,im_frag_alpha] = extract_random_patch_from_frescoes(im_seg_s, m, all_other_fns, nb_attempts, grayscale_conversion, ...
+                                                                                                   fragments_scale_factors_range, padding_factor, interpolation_type);
+                                frags_infos3{my_idx}          = struct('alpha', im_frag_alpha, 'color', im_frag_color);
                                 frags_translations3{my_idx}   = [];
                                 frags_angles3{my_idx}         = 0.0;
                                 frags_seg_idx3{my_idx}        = 0;

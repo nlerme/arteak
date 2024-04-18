@@ -39,56 +39,47 @@ function im_result = simulate_fresco_fragmentation( image_size, sampling_min_dis
     im_pts(my_idx) = 1:numel(my_idx);
 
     % We compute the Voronoi diagram from this set of points
-    [im_dmap,m_nn] = bwdist(im_pts>0, metric);
-    im_seg         = uint32(im_pts(m_nn));
+    [im_dmap,im_nn] = bwdist(im_pts>0, metric);
+    im_seg1         = uint32(im_pts(im_nn));
 
     % We generate a power law noise image
     im_noise = power_law_noise(image_size, noise_exponent);
 
     % We build the distance map to the contours of the diagram
+    im_bnd   = imgradient(im_seg1, 'central')>0;
+    im_dmap2 = bwdist(im_bnd, metric)+1;
+
+    % We compute the half diameter of the smallest Voronoi cell
     min_dist = inf;
 
     for k=1:size(pts,1)
-        im_tmp   = im_dmap.*(im_seg==k);
-        min_dist = min(min_dist,max(im_tmp(:)));
+        im_tmp   = im_dmap2.*(im_seg1==k);
+        min_dist = min(min_dist, max(im_tmp(:)));
     end
 
-    im_tmp   = imgradient(im_seg, 'central')>0;
-    im_dmap2 = bwdist(im_tmp, metric);
-
     % We slightly erode all the pieces of the Voronoi diagram
-    threshold = round(uncertainty_band_size*min_dist);
-    im_pts2   = (im_dmap2>=threshold);
+    threshold = uncertainty_band_size*min_dist;
+    im_cells  = (im_dmap2>=threshold);
 
     % We normalize the values of the initial distance map
     im_dmap = rescale(im_dmap, 0.0, 1.0);
 
     % We generate the partition of irregularly shaped fragments
     im_weights = (1.0-beta)*im_noise + beta*im_dmap + eps;
-    im_weights = imimposemin(im_weights, im_pts2);
-    im_seg     = uint32(watershed(im_weights));
+    im_weights = imimposemin(im_weights, im_cells);
+    im_seg2     = uint32(watershed(im_weights));
 
     % We renumber fragments based on their initial labels
-    im_seg2 = zeros(size(im_seg), 'uint32');
+    im_seg3 = zeros(size(im_seg2), 'uint32');
 
     for k=1:size(pts,1)
-        label   = im_seg(pts(k,1),pts(k,2));
-        im_seg2 = im_seg2 + uint32((im_seg==label)*k);
+        label   = im_seg2(pts(k,1),pts(k,2));
+        im_seg3 = im_seg3 + uint32((im_seg2==label)*k);
     end
 
-    % We fill boundaries between fragments (label with largest number of
-    % occurrences in the immediate neighborhood the boundary pixel)
-    [rows,cols] = find(im_seg2==0);
-    im_result   = im_seg2;
-
-    for k=randperm(numel(rows))
-        i              = rows(k);
-        j              = cols(k);
-        ii             = max(i-1,1):min(i+1,image_size(1));
-        jj             = max(j-1,1):min(j+1,image_size(2));
-        im_tmp         = im_seg2(ii,jj);
-        im_tmp         = im_tmp(im_tmp>0);
-        labels         = sort(im_tmp(:), 'descend');
-        im_result(i,j) = labels(1);
-    end
+    % We fill boundaries between fragments
+    [~,im_nn2]        = bwdist(im_seg3>0, metric);
+    im_tmp            = (im_seg3==0);
+    im_result         = im_seg3;
+    im_result(im_tmp) = im_seg3(im_nn2(im_tmp));
 end

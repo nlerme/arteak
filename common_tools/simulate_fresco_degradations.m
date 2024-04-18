@@ -22,7 +22,7 @@ function [im_noisy,im_deg,im_alphas] = simulate_fresco_degradations( im_fresco_c
     if palette_size~=256
         [im_seg,lab_centroids] = imsegkmeans(im2single(rgb2lab(im_noisy)), palette_size);
         rgb_centroids          = max(0,min(1,im2double(lab2rgb(lab_centroids))));
-        im_noisy               = label2rgb(im_seg, rgb_centroids, [1,1,1]);
+        im_noisy               = label2rgb(im_seg, rgb_centroids);
     end
 
     % We apply Gaussian noise on the fresco image
