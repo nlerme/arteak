@@ -4,10 +4,10 @@ This directory contains tools for automatically generating simulated frescoes an
 takes the fresco models from [1] as input and generates new data by simulating fragmentations but also degradations on both fresco models (noise, missing parts, 
 color fading) and fragment images (noise, erosion and color fading). Degradations are simulated exactly in the same way as in the directory **irregular_dafne2**. 
 The generated fragments are **rectangular**. Hence, locations are constrained to lie on a regular lattice. Whatever the location on the latter, the rotation 
-angles are constrained to be {-270,-180,-90,0}. An example of illustration is given below for the fresco ``Resurrection'' from Piero Della Francesca.
+angles are constrained to be among {-270,-180,-90,0}. An example of illustration is given below for the fresco ``Resurrection'' painted by Piero Della Francesca.
 
-![Full fresco model with color fading, noise and missing parts](https://ibb.co/PGDmDn4)
-![Ideal reconstruction](https://ibb.co/PGDmDn4)
+![Full fresco model with missing parts](https://ibb.co/170Qb7S)
+![Ideal reconstruction with neighboring relationships](https://ibb.co/d0Yn1vN)
 
 References
 ----------

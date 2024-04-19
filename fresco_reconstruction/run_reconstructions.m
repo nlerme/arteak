@@ -17,7 +17,7 @@ function run_reconstructions()
         % -----------------------------------------------------------------
         seed                   = 1; % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
         results_root_dir       = ['..' filesep '..' filesep 'results' filesep 'tests'];
-        data_root_dir          = ['..' filesep '..' filesep 'data' filesep 'real' filesep 'output'];
+        data_root_dir          = ['..' filesep '..' filesep 'data' filesep 'simulated' filesep 'irregular_dafne1'];
         fresco_model_fn_suffix = '';
         %------------------------------------------------------------------
 
@@ -72,8 +72,8 @@ function run_reconstructions()
         %config_name = [fresco_name '_71_0_0_2'];
         %config_name = [fresco_name '_175_0_0_2'];
 
-        %fresco_name = 'PierodellaFrancesca_Resurrezione_730x826';
-        %config_name = [fresco_name '_73_0_0_0'];
+        fresco_name = 'PierodellaFrancesca_Resurrezione_730x826';
+        config_name = [fresco_name '_73_0_0_0'];
         %config_name = [fresco_name '_183_0_0_0'];
         %config_name = [fresco_name '_2019-2-28_13.55.54'];
         %config_name = [fresco_name '_2019-2-28_13.56.15'];
