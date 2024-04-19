@@ -5,8 +5,8 @@ takes the fresco models from [1] as input and generates new data by simulating f
 color fading) and fragment images (noise, erosion and color fading). The generated fragments are of arbitrary shape. The fragmentation process is described 
 in the next section. An example of illustration is given below for the fresco ``Resurrection'' from Piero Della Francesca.
 
-![Full fresco model with color fading, noise and missing parts](https://ibb.co/PGDmDn4)
-![Ideal reconstruction](https://ibb.co/PGDmDn4)
+![Full fresco model with missing parts](pics/example_fresco_model.png)
+![Ideal reconstruction with neighboring relationships](pics/example_reconstruction_n.png)
 
 Fragmentation process
 ---------------------

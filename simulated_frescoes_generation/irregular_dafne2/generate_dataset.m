@@ -27,23 +27,23 @@ function generate_dataset()
 
         % Parameters
         seed                            = 1;                                                                                              % Seed used for pseudo random number generator (<0=random, >0=fixed seed for reproductibility)
-        verbose                         = false;                                                                                          % Enables/disables display of messages on command window (true or false)
+        verbose                         = true;                                                                                          % Enables/disables display of messages on command window (true or false)
         grayscale_conversion            = false;                                                                                          % Enables/disables grayscale conversion of both fresco and fragment images (true or false)
         interpolation_type              = 'nearest';                                                                                      % Interpolation type for reconstructing frescoes from fragments (nearest, bilinear, bicubic, etc.)
         nb_attempts                     = 100;                                                                                            % Number of attempts when extracting random patches from fresco images (>0)
         padding_factor                  = 1.2;                                                                                            % Factor by which fragment images are enlarged before saving; e.g. 1.2 means 20% of enlargement (>=0)
-        fragments_palette_sizes         = [10,256];                                                                                       % Reduced number of color for fading on fragment images (vector with entries in {0,...,256})
-        fragments_erosion_rates         = [0.0,0.003];                                                                                    % Percentages of fragments erosion, relatively to the fresco image size (vector with entries in [0,1])
-        fragments_noise_stds            = [0.0,0.01];                                                                                     % Standard deviations of Gaussian noise applied on each fragment (vector of positive reals)
-        fragments_missing_rates         = [0.0,0.2];                                                                                      % Percentages of missing fragments (vector with entries in [0,1])
-        fragments_spurious_rates        = [0.0,0.2];                                                                                      % Percentages of spurious fragments (vector with entries in [0,1])
-        fragments_erosion_factors_range = [1.0,1.0];                                                                                      % Range of erosion factors for varying erosion radii in the same fresco (pair of positive reals)
+        fragments_palette_sizes         = [10];                                                                                       % Reduced number of color for fading on fragment images (vector with entries in {0,...,256})
+        fragments_erosion_rates         = [0.003];                                                                                    % Percentages of fragments erosion, relatively to the fresco image size (vector with entries in [0,1])
+        fragments_noise_stds            = [0.01];                                                                                     % Standard deviations of Gaussian noise applied on each fragment (vector of positive reals)
+        fragments_missing_rates         = [0.2];                                                                                      % Percentages of missing fragments (vector with entries in [0,1])
+        fragments_spurious_rates        = [0.2];                                                                                      % Percentages of spurious fragments (vector with entries in [0,1])
+        fragments_erosion_factors_range = [1.0,4.0];                                                                                      % Range of erosion factors for varying erosion radii in the same fresco (pair of positive reals)
         fragments_scale_factors_range   = [1.0,1.0];                                                                                      % Range of scale factors of spuriously generated fragments (pair of positive reals)
-        fresco_palette_sizes            = [10,256];                                                                                       % Reduced number of color for fading on fresco image (vector with entries in {0,...,256})
+        fresco_palette_sizes            = [10];                                                                                       % Reduced number of color for fading on fresco image (vector with entries in {0,...,256})
         fresco_missing_parts_rates      = 0.0:0.1:1.0;                                                                                    % Percentages of missing parts of the fresco image (vector with entries in [0,1])
         fresco_missing_parts_params     = struct('type', 'power_law', 'exponent', 1.8);                                                   % Parameters for simulating degradations of the fresco image (struct)
-        fresco_noise_stds               = [0.0,0.01];                                                                                     % Standard deviations of Gaussian noise of the fresco image (vector of positive reals)
-        fresco_fragmentation_min_dists  = [0.05,0.10,0.15];                                                                               % Minimum distances between sampled location of fragments, relatively to the fresco image size (vector of positive reals)
+        fresco_noise_stds               = [0.01];                                                                                     % Standard deviations of Gaussian noise of the fresco image (vector of positive reals)
+        fresco_fragmentation_min_dists  = [0.1];                                                                               % Minimum distances between sampled location of fragments, relatively to the fresco image size (vector of positive reals)
         fresco_fragmentation_params     = struct('noise_exponent', 1.0, 'uncertainty_band_size', 0.5, ...
                                                  'beta', 0.5, 'metric', 'euclidean');                                                     % Parameters for simulating fragmentation of frescoes (struct)
         input_frescoes_dir              = ['..' filesep '..' filesep '..' filesep 'data' filesep 'simulated' filesep 'irregular_dafne1']; % Input frescoes directory (string)
@@ -80,8 +80,8 @@ function generate_dataset()
         end
 
         % We loop over input fresco filenames
-        %parfor i=1:numel(input_frescoes_fns)
-        for i=1:numel(input_frescoes_fns)
+        %for i=1:numel(input_frescoes_fns)
+        for i=46
             % We create output directory or delete it
             [~,fresco_name,~] = fileparts(input_frescoes_fns{i});
             all_other_fns     = setdiff(input_frescoes_fns, input_frescoes_fns{i});
@@ -96,7 +96,6 @@ function generate_dataset()
 
             % We load fresco image and get its size
             [im_fresco_color,~] = load_image(input_frescoes_fns{i}, grayscale_conversion);
-            im_fresco_color     = imresize(im_fresco_color, 0.25);
             fresco_size         = size(im_fresco_color,[1,2]);
             nb_channels         = size(im_fresco_color,3);
 
