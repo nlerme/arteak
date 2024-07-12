@@ -119,7 +119,7 @@ function [best_frags_sol,energy] = select_best_fragments_qpbo( current_frags_sol
 %                                j_angle~=jj_angle || ...
 %                                (j_translation(1)-i_translation(1))~=(jj_translation(1)-ii_translation(1)) || ...
 %                                (j_translation(2)-i_translation(2))~=(jj_translation(2)-ii_translation(2))
-%                                 % Penality
+%                                 % Penalty
 %                                 ok   = true;
 %                                 cost = cost + beta_sf*1.0;
 %                             else

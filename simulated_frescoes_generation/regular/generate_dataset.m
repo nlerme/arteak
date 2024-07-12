@@ -76,7 +76,8 @@ function generate_dataset()
         end
 
         % We loop over input fresco filenames
-        for i=1:numel(input_frescoes_fns)
+        %for i=1:numel(input_frescoes_fns)
+        for i=46
             % We create output directory or delete it
             [~,fresco_name,~] = fileparts(input_frescoes_fns{i});
             all_other_fns     = setdiff(input_frescoes_fns, input_frescoes_fns{i});

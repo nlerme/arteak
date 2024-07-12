@@ -28,13 +28,13 @@ function frags_sol = create_fragments_solution( im_seg, frags_translations, frag
 
     % We compute neighboring fragments with respect to the initial fragmentation
     for i=1:numel(true_idx)
-        im_frag    = (im_seg==frags_seg_idx{i});
+        im_frag    = (im_seg==frags_seg_idx{true_idx(i)});
         im_d_frag  = imdilate(im_frag, true(3));
         im_o_frags = ~im_frag & im_d_frag;
         n_seg_idx  = unique(im_seg(im_o_frags>0));
 
         for j=1:numel(true_idx)
-            if numel(find(n_seg_idx==frags_seg_idx{j}))>0
+            if numel(find(n_seg_idx==frags_seg_idx{true_idx(j)}))>0
                 frags_sol{i}.neighbors = [frags_sol{i}.neighbors,j];
             end
         end

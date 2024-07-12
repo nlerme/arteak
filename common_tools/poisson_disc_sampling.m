@@ -49,7 +49,7 @@ dartFactor = 4; %Select number of sample data in each iterations. Change it to
 % reduce run time for code. Have to play around with number. 
 %%%%%%% Making Grid read for iterations
 %Make grid size such that there is just one pt in each grid
-dm = spacing/sqrt(ndim);    % grize cell size [Bridson 2007]
+dm = spacing/sqrt(ndim);    % grid cell size [Bridson 2007]
 %Make Grid
 for i = 1:ndim
     sGrid{1,i} = 1:dm:sizeI(i);
@@ -92,7 +92,7 @@ while ptsCreated<nPts & nEmptyGrid >0
     % Find good dart throws
     [~,D] = knnsearch([pts;tempPts],tempPts,'k',2); %Finding distance between all darts(pts)
     D = D(:,2); 
-    withinI = logical(prod(bsxfun(@lt,tempPts,sizeI),2)); %Eligible pts should be withing sizeI 
+    withinI = logical(prod(bsxfun(@lt,tempPts,sizeI),2)); %Eligible pts should be within sizeI 
     eligiblePts = withinI & D>spacing; %elgible pts should also have minimum separation distance
     
     scorePts = tempPts(~eligiblePts,:); %Keep score from bad dart throws :(

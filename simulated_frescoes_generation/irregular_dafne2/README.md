@@ -10,11 +10,11 @@ in the next section. An example of illustration is given below for the fresco ``
 
 Fragmentation process
 ---------------------
-1) Generation of random seeds using Poisson sampling
+1) Random sampling of seeds (Poisson or non-uniform)
 2) Generation of normalized power law noise image
 3) Computation of Voronoi diagram from seeds
 4) Computation of distance map to the contours of Voronoi diagram
-5) Erosion of Voronoi cells based on the distance map
+5) Erosion of Voronoi cells based on the the distance map
 6) Normalization of distance map
 7) Watershed-based segmentation between eroded Voronoi cells
 
