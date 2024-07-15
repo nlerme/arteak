@@ -70,7 +70,7 @@ function [im_result,im_noise] = simulate_fresco_fragmentation( image_size, param
     % We generate a power law noise image
     im_noise = power_law_noise(image_size, noise_exponent);
 
-    % We build the distance map to the contours of the diagram
+    % We build the distance map to the boundaries of the diagram
     im_bnd   = imgradient(im_seg1, 'central')>0;
     im_dmap2 = bwdist(im_bnd, metric)+1;
 
@@ -92,7 +92,7 @@ function [im_result,im_noise] = simulate_fresco_fragmentation( image_size, param
     % We generate the partition of irregularly shaped fragments
     im_weights = (1.0-beta)*im_noise + beta*im_dmap + eps;
     im_weights = imimposemin(im_weights, im_cells);
-    im_seg2     = uint32(watershed(im_weights));
+    im_seg2    = uint32(watershed(im_weights));
 
     % We renumber fragments based on their initial labels
     im_seg3 = zeros(size(im_seg2), 'uint32');
@@ -107,4 +107,13 @@ function [im_result,im_noise] = simulate_fresco_fragmentation( image_size, param
     im_tmp            = (im_seg3==0);
     im_result         = im_seg3;
     im_result(im_tmp) = im_seg3(im_nn2(im_tmp));
+
+    %--- debug ---
+    %figure, imshow(im_weights,[]);
+    % figure, imshow(im_cells,[]);
+    % hold on; plot(pts(:,2),pts(:,1),'c+');
+    % pause(1);
+    % figure, imshow(im_weights,[]);
+    % hold on; plot(pts(:,2),pts(:,1),'c+');
+    %-------------
 end

@@ -45,7 +45,7 @@ function generate_dataset()
         fresco_noise_stds               = [0.0];                                                                                          % Standard deviations of Gaussian noise of the fresco image (vector of positive reals)
         fresco_fragmentation_min_dists  = [0.05,0.10,0.15];                                                                               % Minimum distances between sampled location of fragments, relatively to the fresco image size (vector of positive reals)
         fresco_fragmentation_nb_frags   = [100,200,300];                                                                                  % Number of sampled fragments; 0 means that value is not used (optional; vector of non-negative integers)
-        fresco_fragmentation_params     = struct('sampling_min_dist', [], 'sampling_nb_points', [], 'sampling_type', 'non-uniform', ...
+        fresco_fragmentation_params     = struct('sampling_min_dist', [], 'sampling_nb_points', [], 'sampling_type', 'non-uniform--loyd', ...
                                                  'noise_exponent', 1.0, 'uncertainty_band_size', 0.5, ...
                                                  'beta', 0.5, 'metric', 'euclidean');                                                     % Parameters for simulating fragmentation of frescoes (struct)
         input_frescoes_dir              = ['..' filesep '..' filesep '..' filesep 'data' filesep 'simulated' filesep 'irregular_dafne1']; % Input frescoes directory (string)
@@ -75,6 +75,7 @@ function generate_dataset()
         else
             if purge_dataset
                 rmdir(output_frescoes_dir, 's');
+                mkdir(output_dir);
                 disp('[ old dataset removed ]');
             else
                 error(sprintf('The output directory %s is not empty. Please remove it or set flag purge_dataset to true.', output_frescoes_dir));
