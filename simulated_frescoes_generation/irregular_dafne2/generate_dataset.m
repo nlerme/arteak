@@ -77,8 +77,6 @@ function generate_dataset()
                 rmdir(output_frescoes_dir, 's');
                 mkdir(output_dir);
                 disp('[ old dataset removed ]');
-            else
-                error(sprintf('The output directory %s is not empty. Please remove it or set flag purge_dataset to true.', output_frescoes_dir));
             end
         end
 

@@ -3,8 +3,8 @@
 % speeding-up nearest neighbors searches.
 % 
 % Inputs:
-%   * image_size:  size of the image (2D vector of poisitive integers)
-%   * min_dist:    targeted minimum distance between sampled (>=0)
+%   * image_size:  size of the image (2D vector of positive integers)
+%   * min_dist:    targeted minimum distance between sampled points (>=0)
 %   * nb_points:   number of sampled points (positive integer)
 % 
 % Outputs:

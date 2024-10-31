@@ -1,0 +1,34 @@
+clear all;
+close all;
+clc;
+
+%-------------------
+
+image_size = [1024,1024];
+nb_points = 1000;
+
+tic;
+p = randperm(prod(image_size));
+pts = p(1:nb_points);
+[y,x] = ind2sub(image_size, pts');
+coords = [y,x];
+im_pts = zeros(image_size, 'logical');
+im_pts(pts) = 1;
+[x,y] = meshgrid(1:image_size(2), 1:image_size(2));
+x = x(:);
+y = y(:);
+dists = realmax*ones(prod(image_size),1);
+nn = zeros(prod(image_size),1);
+for k=1:nb_points
+    d = sqrt(sum(([y,x]-coords(k,:)).^2,2));
+    cmp = (d<dists);
+    dists(cmp) = d(cmp);
+    nn(cmp) = k;
+end
+im_dmap = reshape(dists, image_size);
+im_nn = reshape(nn, image_size);
+toc;
+
+%figure, imshow(im_pts,[]);
+%figure, imshow(im_dmap,[]);
+%figure, imshow(im_nn,[]);

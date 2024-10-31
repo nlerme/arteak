@@ -4,9 +4,9 @@
 % them is larger than some threshold.
 % 
 % Inputs:
-%   * image_size:  size of the image (2D vector of poisitive integers)
-%   * min_dist:    targeted minimum distance between sampled (>=0)
-%   * nb_points:   number of sampled points (positive integer)
+%   * image_size:         size of the image (2D vector of positive integers)
+%   * min_dist:           targeted minimum distance between sampled points (>=0)
+%   * nb_points:          number of sampled points (positive integer)
 % 
 % Outputs:
 %   * pts:  sampled points (Nx2 matrix of reals)

@@ -1,4 +1,4 @@
-function [pts] = poisson_disc_samping( sizeI, spacing, nPts, showIter )
+function [pts] = poisson_disc_sampling( sizeI, spacing, nPts, showIter )
 % Purpose:
 % N-dimensional poisson disc sampling function. This can also be used to
 % randomly sample k pts from N-dimensional space with a minimum separation
