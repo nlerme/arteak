@@ -29,16 +29,16 @@ function generate_dataset_gael()
         seed               = 1;                                                                                                     % Seed used for pseudo random number generator (<0:random, >=0:fixed seed for reproductibility)
         verbose            = true;                                                                                                  % Enables/disables display of messages on command window (true or false)
         image_size         = [512,512];                                                                                             % Size of resulting fragmentations (2D vector of positive integers)
-        min_dists          = [25];                                                                                      % Minimum distances between sampled location of fragments (vector of positive reals; in pixrls)
-        nb_fragments       = [25];                                                                                      % Number of fragments (vector of non-negative integers)
-        nb_fragmentations  = [200000];                                                                                           % Number of fragmentations to generate per number of fragments (vector of positive integers)
+        nb_fragments       = 3:15;                                                                                                  % Number of fragments (vector of non-negative integers)
+        min_dists          = 25*ones(size(nb_fragments));                                                                           % Minimum distances between sampled location of fragments (vector of positive reals; in pixels)
+        nb_fragmentations  = 1*ones(size(nb_fragments));                                                                            % Number of fragmentations to generate per number of fragments (vector of positive integers)
         erosion_levels     = [0,3];                                                                                                 % Erosion levels (vector of non-negative integers; in pixels)
         parameters         = struct('sampling_min_dist', [], 'sampling_nb_points', [], 'sampling_type', 'non-uniform-lloyd', ...
                                     'noise_exponent', 1.5, 'uncertainty_band_size', 10, ...
                                     'beta', 0.5, 'metric', 'euclidean');                                                            % Parameters for simulating fragmentations (struct)
-        %output_dir         = ['..' filesep '..' filesep '..' filesep 'data' filesep 'simulated' filesep 'gael'];                    % Output fragmentations directory (string)
-        output_dir         = ['/media/nas_utils_nl2/nicolas66/donnees'];                                                           % Output fragmentations directory (string)
-        purge_dataset      = false;                                                                                                  % Enables/disables destruction of previous version of dataset (true or false)
+        output_dir         = ['..' filesep '..' filesep '..' filesep 'data' filesep 'simulated' filesep 'gael'];                    % Output fragmentations directory (string)
+        %output_dir         = ['/media/nas_utils_nl2/nicolas66/donnees'];                                                           % Output fragmentations directory (string)
+        purge_dataset      = true;                                                                                                  % Enables/disables destruction of previous version of dataset (true or false)
 
         % We check array length consistency arrays are of the same size
         if numel(min_dists)~=numel(nb_fragments) || numel(min_dists)~=numel(nb_fragmentations)
