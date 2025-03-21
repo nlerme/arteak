@@ -26,29 +26,38 @@ function generate_dataset_gael()
         end
 
         % Parameters to tune
-        seed               = 1;                                                                                                     % Seed used for pseudo random number generator (<0:random, >=0:fixed seed for reproductibility)
-        verbose            = true;                                                                                                  % Enables/disables display of messages on command window (true or false)
-        image_size         = [512,512];                                                                                             % Size of resulting fragmentations (2D vector of positive integers)
-        nb_fragments       = 3:15;                                                                                                  % Number of fragments (vector of non-negative integers)
-        min_dists          = 25*ones(size(nb_fragments));                                                                           % Minimum distances between sampled location of fragments (vector of positive reals; in pixels)
-        nb_fragmentations  = 1*ones(size(nb_fragments));                                                                            % Number of fragmentations to generate per number of fragments (vector of positive integers)
-        erosion_levels     = [0,3];                                                                                                 % Erosion levels (vector of non-negative integers; in pixels)
+        seed               = 1;                                                                                                  % Seed used for pseudo random number generator (<0:random, >=0:fixed seed for reproductibility)
+        verbose            = true;                                                                                               % Enables/disables display of messages on command window (true or false)
+        image_size         = [512,512];                                                                                          % Size of resulting fragmentations (2D vector of positive integers)
+        mis                = min(image_size);                                                                                    % Temporary variable declared for convenience
+        nb_fragments       = 3:15;                                                                                               % Number of fragments (vector of non-negative integers)
+        min_dists          = 0.05*mis*ones(size(nb_fragments));                                                                  % Minimum distances between sampled location of fragments (vector of positive reals; in pixels)
+        nb_fragmentations  = 10000*ones(size(nb_fragments));                                                                     % Number of fragmentations to generate per number of fragments (vector of positive integers)
+        erosion_levels     = struct('min', [0.0,0.005]*mis, 'max', [0.0,0.01]*mis);                                              % Lower and upper bounds on erosion levels (struct with lower and upper bounds arrays)
         parameters         = struct('sampling_min_dist', [], 'sampling_nb_points', [], 'sampling_type', 'non-uniform-lloyd', ...
-                                    'noise_exponent', 1.5, 'uncertainty_band_size', 10, ...
-                                    'beta', 0.5, 'metric', 'euclidean');                                                            % Parameters for simulating fragmentations (struct)
-        output_dir         = ['..' filesep '..' filesep '..' filesep 'data' filesep 'simulated' filesep 'gael'];                    % Output fragmentations directory (string)
-        %output_dir         = ['/media/nas_utils_nl2/nicolas66/donnees'];                                                           % Output fragmentations directory (string)
-        purge_dataset      = true;                                                                                                  % Enables/disables destruction of previous version of dataset (true or false)
+                                    'noise_exponent', 1.7, 'uncertainty_band_size', 0.02*mis, 'beta', 0.5, ...
+                                    'dist_name', 'euclidean', 'dist_weights', [0.5,1.0]);                                          % Parameters for simulating fragmentations (struct)
+        %output_dir         = ['..' filesep '..' filesep '..' filesep 'data' filesep 'simulated' filesep 'gael'];                % Output fragmentations directory (string)
+        output_dir         = ['results'];                                                                                        % Output fragmentations directory (string)
+        purge_dataset      = true;                                                                                               % Enables/disables destruction of previous version of dataset (true or false)
 
         % We check array length consistency arrays are of the same size
         if numel(min_dists)~=numel(nb_fragments) || numel(min_dists)~=numel(nb_fragmentations)
             error('The size of array min_dists, nb_fragments and nb_fragmentations parameters arrays must be the same');
         end
 
-        % We check if erosion levels are all smaller than minimum distances
-        for i=1:numel(erosion_levels)
-            if any(min_dists<=erosion_levels(i))
-                error('Erosion levels must be all smaller than minimum distances');
+        % We check if erosion levels are consistent
+        if numel(erosion_levels.min)~=numel(erosion_levels.max)
+            error('The number of lower and upper bounds of erosion levels must be the same');
+        end
+
+        for i=1:numel(erosion_levels.min)
+            if any(min_dists<=erosion_levels.min(i)) || any(min_dists<=erosion_levels.max(i))
+                error('Minimum and maximum erosion levels must be both smaller than minimum distances');
+            end
+
+            if erosion_levels.min(i)>erosion_levels.max(i)
+                error('Minimum erosion levels must be smaller than maximum ones');
             end
         end
 
@@ -76,7 +85,7 @@ function generate_dataset_gael()
             if purge_dataset
                 rmdir(output_dir, 's');
                 mkdir(output_dir);
-                disp('[ old dataset removed ]');
+                msg('[ old dataset removed ]', verbose);
             end
         end
 
@@ -94,46 +103,56 @@ function generate_dataset_gael()
                 % Message
                 msg(sprintf('  + fragmentation %d', j), verbose);
 
-                % We simulate fragmentation and convert it to uint16
-                [im_fragmentation,~,im_voronoi] = simulate_fresco_fragmentation(image_size, parameters, false);
-                im_fragmentation                = uint16(im_fragmentation);
-                im_voronoi                      = uint16(im_voronoi);
+                % We simulate fragmentation and compute distance from resulting boundaries
+                [im_fragmentation,~] = simulate_fresco_fragmentation(image_size, parameters);
+                [im_dmap,max_dists]  = get_distance_to_contours(im_fragmentation, 'euclidean', true);
+                min_dist             = min(max_dists);
 
                 % We loop over erosion levels
-                parfor k=1:numel(erosion_levels)
+                for k=1:numel(erosion_levels.min)
                     % Message
-                    msg(sprintf('    + erosion level=%d', erosion_levels(k)), verbose);
+                    msg(sprintf('    + erosion level (min=%f,max=%f)', erosion_levels.min(k), erosion_levels.max(k)), verbose);
 
-                    % We erode all pieces of the fragmentation (if needed)
-                    if erosion_levels(k)==0
-                        im_fragmentation_e = im_fragmentation;
-                    else
-                        [im_dmap,max_dists]      = get_distance_to_contours(im_fragmentation, parameters.metric);
-                        min_dist                 = min(max_dists);
-                        threshold                = min(erosion_levels(k),0.75*min_dist);
-                        im_fragmentation_e       = im_fragmentation;
-                        im_fragmentation_e(im_dmap<=threshold) = 0;
+                    % We eventually erode resulting fragments
+                    if erosion_levels.min(k)>0 && erosion_levels.max(k)>0
+                        % We erode all fragments
+                        if erosion_levels.min(k)==erosion_levels.max(k)
+                            threshold                           = min(erosion_levels.min(k),0.75*min_dist);
+                            im_fragmentation(im_dmap<threshold) = 0;
+                        else
+                            [min_label,max_label] = bounds(im_fragmentation(:));
+                
+                            for l=min_label:max_label
+                                threshold                = min(rand_bounds(erosion_levels.min(k),erosion_levels.max(k)), 0.75*min_dist);
+                                im_tmp                   = (im_dmap<threshold) & (im_fragmentation==l);
+                                im_fragmentation(im_tmp) = 0;
+                            end
+                        end
                     end
+                
+                    % Since erosion can cause an increase of the number of connected components, we keep the k largest ones
+                    im_tmp                      = bwpropfilt(im_fragmentation>0, 'Area', nb_fragments(i), 'largest');
+                    im_fragmentation(im_tmp==0) = 0;
+
+                    %--- debug ---
+                    figure, imshow(im_fragmentation,[]);
+                    %-------------
 
                     % We create output directory if needed
-                    fragmentations_dir = [output_dir filesep sprintf('nb_fragments=%d_erosion=%d', nb_fragments(i), erosion_levels(k))];
+                    fragmentations_dir = [output_dir filesep sprintf('nb_fragments=%d_erosion=%d_%d', nb_fragments(i), erosion_levels.min(k), erosion_levels.max(k))];
 
                     if ~isfolder(fragmentations_dir)
                         mkdir(fragmentations_dir);
                     end
 
-                    % We save the fragmentation and the Voronoi images in the output directory
-                    fragmentation_fn = [fragmentations_dir filesep sprintf('fragmentation_%dx%d_%d_%d_%d.tif', image_size(1), image_size(2), nb_fragments(i), min_dists(i), j)];
-                    voronoi_fn       = [fragmentations_dir filesep sprintf('voronoi_%dx%d_%d_%d_%d.tif', image_size(1), image_size(2), nb_fragments(i), min_dists(i), j)];
-                    imwrite(im_fragmentation_e, fragmentation_fn, 'Compression', 'deflate');
-                    imwrite(im_voronoi, voronoi_fn, 'Compression', 'deflate');
+                    % We save the fragmentation image in the output directory
+                    fragmentation_fn = [fragmentations_dir filesep sprintf('fragmentation_%dx%d_%d_%d_%d.tif', image_size(1), image_size(2), nb_fragments(i), round(min_dists(i)), j)];
+                    imwrite(uint16(im_fragmentation), fragmentation_fn, 'Compression', 'deflate');
 
                     %--- debug ---
-                    if (max(im_fragmentation_e(:))-max(1,min(im_fragmentation_e(:))))~=(nb_fragments(i)-1)
-                        disp('PROBLEM !!!!!!!!!!!!!!!!!!!!!');
+                    if (max(im_fragmentation(:))-max(1,min(im_fragmentation(:))))~=(nb_fragments(i)-1)
+                        error('!!! CONSISTENCY PROBLEM ON RESULTING LABELING !!!');
                     end
-                    %figure, imshow(imread(fragmentation_fn),[]);
-                    %figure, imshow(im_noise,[]);
                     %-------------
                 end
             end

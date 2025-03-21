@@ -1,4 +1,4 @@
-% This function generates a power law noise.
+% This function generates a power law noise image.
 % 
 % Inputs:
 %   * image_size:  output image size (2D vector of integers)
