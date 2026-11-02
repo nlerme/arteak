@@ -8,4 +8,4 @@ This directory contains a graphical user interface written in **MATLAB** that ca
 
 An example of execution of the aforementioned GUI is shown below:
 
-![Screenshot](https://ibb.co/PsXMy2R2)
+![Screenshot](https://i.ibb.co/4wv2Lbcb/screenshot-arteak.png)
